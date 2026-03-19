@@ -22,7 +22,7 @@ import Badge from "@/components/Badge";
 import { deviations } from "@/lib/data/deviations";
 import { capas } from "@/lib/data/capas";
 import { rootCauseTrend, monthlyDeviations } from "@/lib/data/trends";
-import { investigators } from "@/lib/data/investigators";
+import { investigators, INVESTIGATOR_NAMES } from "@/lib/data/investigators";
 import { formatDate, isOverdue, daysBetween } from "@/lib/utils";
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -62,10 +62,8 @@ export default function DashboardPage() {
   );
 
   const capaEffectivenessRate = useMemo(() => {
-    const checked = deviations.filter(d => d.capa_effective_flag !== null);
-    if (checked.length === 0) return 0;
-    const effective = checked.filter(d => d.capa_effective_flag === 1).length;
-    return Math.round((effective / checked.length) * 100);
+    const completed = capas.filter(c => c.effectiveness_check_status === "Completed").length;
+    return Math.round((completed / capas.length) * 100);
   }, []);
 
   const severityBreakdown = useMemo(() => {
@@ -79,6 +77,7 @@ export default function DashboardPage() {
   const investigatorWorkload = useMemo(() => {
     return investigators.map(inv => ({
       id: inv.investigator_id,
+      name: INVESTIGATOR_NAMES[inv.investigator_id] ?? inv.investigator_id,
       role: inv.role,
       open: deviations.filter(
         d => d.investigator_id === inv.investigator_id && d.status !== "Closed"
@@ -256,7 +255,7 @@ export default function DashboardPage() {
               <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
               <YAxis
                 type="category"
-                dataKey="id"
+                dataKey="name"
                 width={60}
                 tick={{ fontSize: 11 }}
               />
@@ -308,7 +307,7 @@ export default function DashboardPage() {
                   <td className="px-4 py-2.5">
                     <Badge value={d.status} />
                   </td>
-                  <td className="px-4 py-2.5 text-gray-600">{d.investigator_id}</td>
+                  <td className="px-4 py-2.5 text-gray-600">{INVESTIGATOR_NAMES[d.investigator_id] ?? d.investigator_id}</td>
                   <td className="px-4 py-2.5 text-gray-500">{formatDate(d.opened_date)}</td>
                 </tr>
               ))}

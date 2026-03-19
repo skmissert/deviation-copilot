@@ -12,6 +12,7 @@ import { deviations, DEVIATIONS_BY_ID } from "@/lib/data/deviations";
 import { capas } from "@/lib/data/capas";
 import { getEvidenceForDeviation } from "@/lib/data/evidence";
 import { formatDate, daysBetween } from "@/lib/utils";
+import { INVESTIGATOR_NAMES } from "@/lib/data/investigators";
 import { runIntakeAgent, IntakeResult } from "@/lib/agents/intakeAgent";
 import { runRootCauseAgent, RootCauseCandidate, RootCauseResult } from "@/lib/agents/rootCauseAgent";
 import { runCAPAAgent, CAPARecommendation, CAPAResult } from "@/lib/agents/capaAgent";
@@ -213,7 +214,7 @@ export default function InvestigationWorkspacePage() {
           </div>
           <div className="text-right text-sm text-gray-500 space-y-0.5">
             <div><span className="font-medium text-gray-700">Opened:</span> {formatDate(deviation.opened_date)}</div>
-            <div><span className="font-medium text-gray-700">Investigator:</span> {deviation.investigator_id}</div>
+            <div><span className="font-medium text-gray-700">Investigator:</span> {INVESTIGATOR_NAMES[deviation.investigator_id] ?? deviation.investigator_id}</div>
             <div><span className="font-medium text-gray-700">QA Analyst:</span> {deviation.qa_analyst_id}</div>
           </div>
         </div>

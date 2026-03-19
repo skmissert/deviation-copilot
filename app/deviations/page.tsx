@@ -5,7 +5,16 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import Badge from "@/components/Badge";
 import { deviations, ProcessArea, Severity, DeviationStatus, InvestigatorId } from "@/lib/data/deviations";
+import { INVESTIGATOR_NAMES } from "@/lib/data/investigators";
 import { formatDate, daysBetween } from "@/lib/utils";
+
+const PLURAL_LABELS: Record<string, string> = {
+  Severity: "All Severities",
+  Status: "All Statuses",
+};
+function allLabel(label: string) {
+  return PLURAL_LABELS[label] ?? `All ${label}s`;
+}
 
 const ALL = "All";
 
@@ -19,7 +28,7 @@ export default function DeviationExplorerPage() {
   const severities: (Severity | "All")[] = [ALL, "Critical", "Major", "Minor"];
   const areas: (ProcessArea | "All")[] = [ALL, "Manufacturing", "QC Lab", "Packaging", "Utilities"];
   const statuses: (DeviationStatus | "All")[] = [ALL, "Open", "In Investigation", "CAPA In Progress", "QA Review", "Closed"];
-  const investigators: (InvestigatorId | "All")[] = [ALL, "INV-01", "INV-02", "INV-03", "INV-04", "INV-05", "INV-06"];
+  const investigatorIds: (InvestigatorId | "All")[] = [ALL, "INV-01", "INV-02", "INV-03", "INV-04", "INV-05", "INV-06"];
 
   const filtered = useMemo(() => {
     return deviations.filter(d => {
@@ -59,7 +68,7 @@ export default function DeviationExplorerPage() {
             { label: "Severity", value: filterSeverity, setter: setFilterSeverity, options: severities },
             { label: "Process Area", value: filterArea, setter: setFilterArea, options: areas },
             { label: "Status", value: filterStatus, setter: setFilterStatus, options: statuses },
-            { label: "Investigator", value: filterInvestigator, setter: setFilterInvestigator, options: investigators },
+            { label: "Investigator", value: filterInvestigator, setter: setFilterInvestigator, options: investigatorIds },
           ].map(({ label, value, setter, options }) => (
             <select
               key={label}
@@ -68,7 +77,7 @@ export default function DeviationExplorerPage() {
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
             >
               {options.map(o => (
-                <option key={o} value={o}>{o === ALL ? `All ${label}s` : o}</option>
+                <option key={o} value={o}>{o === ALL ? allLabel(label) : (INVESTIGATOR_NAMES[o] ?? o)}</option>
               ))}
             </select>
           ))}
@@ -121,7 +130,7 @@ export default function DeviationExplorerPage() {
                   <td className="px-4 py-2.5">
                     <Badge value={d.status} />
                   </td>
-                  <td className="px-4 py-2.5 text-gray-600">{d.investigator_id}</td>
+                  <td className="px-4 py-2.5 text-gray-600">{INVESTIGATOR_NAMES[d.investigator_id] ?? d.investigator_id}</td>
                   <td className="px-4 py-2.5 text-gray-500">{formatDate(d.opened_date)}</td>
                   <td className="px-4 py-2.5 text-gray-700">
                     {daysBetween(d.opened_date, d.closure_date)}

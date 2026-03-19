@@ -1,3 +1,12 @@
+export const INVESTIGATOR_NAMES: Record<string, string> = {
+  "INV-01": "Sarah Chen",
+  "INV-02": "Marcus Johnson",
+  "INV-03": "Elena Rodriguez",
+  "INV-04": "David Kim",
+  "INV-05": "Priya Patel",
+  "INV-06": "Thomas Wagner",
+};
+
 export const investigators = [
   {
     investigator_id: "INV-01",
