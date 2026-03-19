@@ -4,12 +4,12 @@ import { usePathname } from "next/navigation";
 import { Activity, FileText, ClipboardList, GitBranch, LayoutDashboard, Network, BookOpen } from "lucide-react";
 
 const links = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/process-map", label: "Process Mining", icon: Network },
+  { href: "/simulation", label: "Digital Twin", icon: GitBranch },
   { href: "/deviations", label: "Deviations", icon: FileText },
   { href: "/capas", label: "CAPA Tracker", icon: ClipboardList },
-  { href: "/simulation", label: "Digital Twin", icon: GitBranch },
-  { href: "/process-map", label: "Process Mining", icon: Network },
-  { href: "/enterprise-explainer", label: "ERP Explainer", icon: BookOpen },
+  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/enterprise-explainer", label: "About This Demo", icon: BookOpen },
 ];
 
 export default function Nav() {
