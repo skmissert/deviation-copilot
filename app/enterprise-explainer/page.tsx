@@ -196,26 +196,6 @@ export default function EnterpriseExplainerPage() {
         ))}
       </div>
 
-      {/* Implementation timeline */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h2 className="text-base font-bold text-gray-900 mb-4">Typical path from demo to live system</h2>
-        <div className="grid grid-cols-4 gap-0 relative">
-          <div className="absolute top-4 left-[12.5%] right-[12.5%] h-0.5 bg-gray-200 z-0" />
-          {[
-            { week: "Weeks 1–2", title: "Data Access & Mapping", desc: "Connect QMS / ERP. Map activities to event log schema. Validate first extracts with QA team." },
-            { week: "Weeks 3–4", title: "Process Discovery", desc: "Run mining algorithms on real data. Validate discovered graph. Establish conformance baseline." },
-            { week: "Weeks 5–6", title: "Insight Calibration", desc: "Quantify actual inefficiencies. Align findings with site QA leadership. Prioritise improvement areas." },
-            { week: "Weeks 7–8", title: "Live Dashboard", desc: "Deploy process intelligence dashboard. Set up alerting thresholds. Hand off to operations." },
-          ].map((phase, i) => (
-            <div key={i} className="relative z-10 px-3 text-center">
-              <div className="w-8 h-8 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center mx-auto mb-2">{i + 1}</div>
-              <p className="text-[10px] text-blue-600 font-semibold mb-0.5">{phase.week}</p>
-              <p className="text-xs font-bold text-gray-900 mb-1">{phase.title}</p>
-              <p className="text-[11px] text-gray-500 leading-snug">{phase.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
 
     </div>
   );
