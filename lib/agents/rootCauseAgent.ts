@@ -16,6 +16,7 @@ export interface RootCauseResult {
 const EVIDENCE_MAP: Record<RootCause, string[]> = {
   "Documentation Error": ["Batch Record", "QA Review Checklist"],
   "Equipment Calibration Drift": ["Equipment Log", "Batch Record"],
+  "Human Factors": ["Batch Record", "Training Records", "Shift Handoff Log"],
   "Operator Training Gap": ["Batch Record", "Training Records"],
   "Process Parameter Drift": ["Batch Record", "Environmental Monitoring"],
   "Environmental Excursion": ["Environmental Monitoring", "Equipment Log"],
@@ -25,6 +26,7 @@ const EVIDENCE_MAP: Record<RootCause, string[]> = {
 const RATIONALE_MAP: Record<RootCause, string> = {
   "Documentation Error": "Missing or incomplete records identified during batch review. Pattern consistent with shift handoff documentation gap.",
   "Equipment Calibration Drift": "Equipment log shows calibration deviation prior to event. Temperature/pressure readings outside expected tolerance band.",
+  "Human Factors": "Batch record and shift logs indicate error attributable to cognitive factors — fatigue, distraction, or high-task-load conditions. Pattern consistent with end-of-shift or peak-throughput periods.",
   "Operator Training Gap": "Batch record shows procedural deviation consistent with inadequate operator training on current SOP version.",
   "Process Parameter Drift": "Batch record indicates process parameter outside target range during critical step. Gradual drift pattern detected.",
   "Environmental Excursion": "Environmental monitoring records show humidity or temperature exceedance during the incident window.",
@@ -50,8 +52,8 @@ export async function runRootCauseAgent(deviation: Deviation, allDeviations: Dev
   };
 
   const allCauses: RootCause[] = [
-    "Documentation Error", "Equipment Calibration Drift", "Operator Training Gap",
-    "Process Parameter Drift", "Environmental Excursion", "Supplier Material Issue"
+    "Documentation Error", "Equipment Calibration Drift", "Human Factors",
+    "Operator Training Gap", "Process Parameter Drift", "Environmental Excursion", "Supplier Material Issue"
   ];
   const alternates = allCauses.filter(c => c !== deviation.root_cause_category).slice(0, 2);
 

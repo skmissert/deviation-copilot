@@ -19,7 +19,7 @@ import {
 import { AlertTriangle } from "lucide-react";
 import KPICard from "@/components/KPICard";
 import Badge from "@/components/Badge";
-import { deviations } from "@/lib/data/deviations";
+import { deviations, ProcessArea } from "@/lib/data/deviations";
 import { capas } from "@/lib/data/capas";
 import { rootCauseTrend, monthlyDeviations } from "@/lib/data/trends";
 import { investigators, INVESTIGATOR_NAMES } from "@/lib/data/investigators";
@@ -92,6 +92,51 @@ export default function DashboardPage() {
         .slice(0, 5),
     []
   );
+
+  const deviationAging = useMemo(() => {
+    const result = [
+      { bucket: "0–5 days", count: 0, color: "bg-blue-400", textColor: "text-blue-700" },
+      { bucket: "6–10 days", count: 0, color: "bg-amber-400", textColor: "text-amber-700" },
+      { bucket: "11–30 days", count: 0, color: "bg-orange-400", textColor: "text-orange-700" },
+      { bucket: "31+ days", count: 0, color: "bg-red-500", textColor: "text-red-700" },
+    ];
+    openDeviations.forEach(d => {
+      const age = daysBetween(d.opened_date, null);
+      if (age <= 5) result[0].count++;
+      else if (age <= 10) result[1].count++;
+      else if (age <= 30) result[2].count++;
+      else result[3].count++;
+    });
+    return result;
+  }, [openDeviations]);
+
+  const capaAging = useMemo(() => {
+    const openCAPAs = capas.filter(c => c.effectiveness_check_status !== "Completed");
+    const result = [
+      { bucket: "0–30 days", count: 0, color: "bg-blue-400", textColor: "text-blue-700" },
+      { bucket: "31–60 days", count: 0, color: "bg-amber-400", textColor: "text-amber-700" },
+      { bucket: "61–90 days", count: 0, color: "bg-orange-400", textColor: "text-orange-700" },
+      { bucket: "91+ days", count: 0, color: "bg-red-500", textColor: "text-red-700" },
+    ];
+    openCAPAs.forEach(c => {
+      const age = daysBetween(c.created_date, null);
+      if (age <= 30) result[0].count++;
+      else if (age <= 60) result[1].count++;
+      else if (age <= 90) result[2].count++;
+      else result[3].count++;
+    });
+    return { buckets: result, total: openCAPAs.length };
+  }, []);
+
+  const recurringByArea = useMemo(() => {
+    const areas: ProcessArea[] = ["Manufacturing", "QC Lab", "Packaging", "Utilities"];
+    return areas.map(area => {
+      const areaDevs = deviations.filter(d => d.process_area === area);
+      const recurring = areaDevs.filter(d => d.recurrence_flag === 1).length;
+      const pct = areaDevs.length > 0 ? Math.round((recurring / areaDevs.length) * 100) : 0;
+      return { area, total: areaDevs.length, recurring, pct };
+    });
+  }, []);
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -266,6 +311,77 @@ export default function DashboardPage() {
               <Bar dataKey="open" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Aging Log */}
+      <div className="grid grid-cols-2 gap-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <h2 className="text-sm font-semibold text-gray-800 mb-0.5">Open Deviation Aging</h2>
+          <p className="text-xs text-gray-400 mb-4">SOP target: close within <span className="font-medium text-gray-600">30 days</span></p>
+          <div className="space-y-3">
+            {deviationAging.map(({ bucket, count, color, textColor }) => (
+              <div key={bucket} className="flex items-center gap-3">
+                <span className="text-xs text-gray-500 w-20 shrink-0">{bucket}</span>
+                <div className="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${color} transition-all`}
+                    style={{ width: openDeviations.length > 0 ? `${(count / openDeviations.length) * 100}%` : "0%" }}
+                  />
+                </div>
+                <span className={`text-xs font-bold w-5 text-right ${textColor}`}>{count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <h2 className="text-sm font-semibold text-gray-800 mb-0.5">Open CAPA Aging</h2>
+          <p className="text-xs text-gray-400 mb-4">SOP target: close within <span className="font-medium text-gray-600">90 days</span></p>
+          <div className="space-y-3">
+            {capaAging.buckets.map(({ bucket, count, color, textColor }) => (
+              <div key={bucket} className="flex items-center gap-3">
+                <span className="text-xs text-gray-500 w-20 shrink-0">{bucket}</span>
+                <div className="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${color} transition-all`}
+                    style={{ width: capaAging.total > 0 ? `${(count / capaAging.total) * 100}%` : "0%" }}
+                  />
+                </div>
+                <span className={`text-xs font-bold w-5 text-right ${textColor}`}>{count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Recurring Deviations by Process Area */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <h2 className="text-sm font-semibold text-gray-800 mb-0.5">Recurring Deviations by Process Area</h2>
+        <p className="text-xs text-gray-400 mb-4">% of deviations flagged as recurrent (same root cause repeated) within each process area</p>
+        <div className="grid grid-cols-4 gap-4">
+          {recurringByArea.map(({ area, total, recurring, pct }) => (
+            <div
+              key={area}
+              className={`rounded-lg p-4 border text-center ${
+                pct >= 35 ? "bg-red-50 border-red-200" :
+                pct >= 20 ? "bg-amber-50 border-amber-200" :
+                "bg-gray-50 border-gray-200"
+              }`}
+            >
+              <p className={`text-3xl font-bold mb-0.5 ${pct >= 35 ? "text-red-600" : pct >= 20 ? "text-amber-600" : "text-green-700"}`}>
+                {pct}%
+              </p>
+              <p className="text-xs font-semibold text-gray-700 mb-1">{area}</p>
+              <p className="text-xs text-gray-400">{recurring} of {total} deviations</p>
+              <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
+                <div
+                  className={`h-1.5 rounded-full ${pct >= 35 ? "bg-red-400" : pct >= 20 ? "bg-amber-400" : "bg-green-400"}`}
+                  style={{ width: `${Math.min(pct, 100)}%` }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

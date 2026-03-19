@@ -51,6 +51,24 @@ const CAPA_TEMPLATES: Record<RootCause, CAPARecommendation[]> = {
       effectiveness_note: "Interval reduction prevented recurrence in 88% of comparable equipment cases.",
     },
   ],
+  "Human Factors": [
+    {
+      action_type: "Corrective",
+      description: "Conduct immediate human factors review with affected team. Identify contributing conditions (fatigue, workload, task design) and implement short-term controls including buddy-check requirement for critical steps.",
+      suggested_owner: "Manufacturing Lead",
+      suggested_days: 14,
+      prior_capa_ids: [],
+      effectiveness_note: "Human factors debriefs with targeted controls reduced recurrence by 78% in comparable events.",
+    },
+    {
+      action_type: "Preventive",
+      description: "Implement fatigue risk management policy and shift-load monitoring. Redesign highest-risk procedural steps using error-proofing principles (poka-yoke). Update shift handoff SOP with structured verbal and written confirmation.",
+      suggested_owner: "QA Manager",
+      suggested_days: 45,
+      prior_capa_ids: [],
+      effectiveness_note: "Error-proofing redesigns eliminated recurrence in 4 of 5 prior human factors CAPAs.",
+    },
+  ],
   "Operator Training Gap": [
     {
       action_type: "Corrective",

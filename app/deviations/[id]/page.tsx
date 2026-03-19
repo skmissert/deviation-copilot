@@ -5,8 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import {
   CheckCircle, ChevronLeft, Loader2, Sparkles, AlertTriangle,
   FileText, Wrench, FlaskConical, Thermometer, ChevronDown, ChevronUp,
-  Clock, User, Lock, Check
+  Clock, User, Lock, Check, Pencil, Plus, ExternalLink
 } from "lucide-react";
+import type { CAPAOwner } from "@/lib/data/capas";
 import Badge from "@/components/Badge";
 import { deviations, DEVIATIONS_BY_ID } from "@/lib/data/deviations";
 import { capas } from "@/lib/data/capas";
@@ -99,6 +100,21 @@ export default function InvestigationWorkspacePage() {
   const [selectedCAPAs, setSelectedCAPAs] = useState<Set<number>>(new Set([0]));
   const [capaConfirmed, setCapaConfirmed] = useState(false);
 
+  // James #1: HITL editing — root cause
+  const [editingRationaleIdx, setEditingRationaleIdx] = useState<number | null>(null);
+  const [editedRationales, setEditedRationales] = useState<Record<number, string>>({});
+  const [showCustomCause, setShowCustomCause] = useState(false);
+  const [customCauseText, setCustomCauseText] = useState("");
+
+  // James #1: HITL editing — CAPA
+  const [editingCAPAIdx, setEditingCAPAIdx] = useState<number | null>(null);
+  const [editedCAPADescs, setEditedCAPADescs] = useState<Record<number, string>>({});
+  const [showAddCAPA, setShowAddCAPA] = useState(false);
+  const [newCAPADesc, setNewCAPADesc] = useState("");
+  const [newCAPAOwner, setNewCAPAOwner] = useState<CAPAOwner>("QA Manager");
+  const [newCAPADays, setNewCAPADays] = useState(30);
+  const [customCAPAs, setCustomCAPAs] = useState<CAPARecommendation[]>([]);
+
   // Summary state
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryDraft, setSummaryDraft] = useState<SummaryDraft | null>(null);
@@ -159,7 +175,31 @@ export default function InvestigationWorkspacePage() {
     const result = await runCAPAAgent(selectedCause.cause, capas);
     setCapaResult(result);
     setSelectedCAPAs(new Set(result.recommendations.map((_, i) => i)));
+    setEditedCAPADescs({});
+    setCustomCAPAs([]);
     setCapaLoading(false);
+  };
+
+  const allCAPAs = capaResult
+    ? [...capaResult.recommendations, ...customCAPAs]
+    : customCAPAs;
+
+  const handleAddCustomCAPA = () => {
+    if (!newCAPADesc.trim()) return;
+    const newRec: CAPARecommendation = {
+      action_type: "Corrective",
+      description: newCAPADesc,
+      suggested_owner: newCAPAOwner,
+      suggested_days: newCAPADays,
+      prior_capa_ids: [],
+      effectiveness_note: "Custom action added by investigator.",
+    };
+    setCustomCAPAs(prev => [...prev]);
+    setCapaResult(prev => prev ? { recommendations: [...prev.recommendations, newRec] } : { recommendations: [newRec] });
+    setSelectedCAPAs(prev => { const n = new Set(prev); n.add(allCAPAs.length); return n; });
+    setNewCAPADesc("");
+    setNewCAPADays(30);
+    setShowAddCAPA(false);
   };
 
   const handleConfirmCAPA = () => {
@@ -463,7 +503,7 @@ export default function InvestigationWorkspacePage() {
                     {rcResult.candidates.map((c, i) => (
                       <div
                         key={i}
-                        onClick={() => !rcConfirmed && setSelectedCause(c)}
+                        onClick={() => !rcConfirmed && editingRationaleIdx !== i && setSelectedCause(c)}
                         className={`rounded-md border p-2.5 text-xs cursor-pointer transition-colors ${
                           selectedCause?.cause === c.cause && !rcConfirmed
                             ? "border-blue-400 bg-blue-50"
@@ -474,9 +514,37 @@ export default function InvestigationWorkspacePage() {
                       >
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-semibold text-gray-800">{c.cause}</span>
-                          <ConfidenceBadge confidence={c.confidence} />
+                          <div className="flex items-center gap-1.5">
+                            <ConfidenceBadge confidence={c.confidence} />
+                            {!rcConfirmed && (
+                              <button
+                                onClick={e => { e.stopPropagation(); setEditingRationaleIdx(editingRationaleIdx === i ? null : i); if (!(i in editedRationales)) setEditedRationales(prev => ({ ...prev, [i]: c.rationale })); }}
+                                className="text-gray-400 hover:text-blue-600 p-0.5 rounded"
+                                title="Edit rationale"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-gray-500 leading-relaxed mb-1.5">{c.rationale}</p>
+                        {editingRationaleIdx === i && !rcConfirmed ? (
+                          <div onClick={e => e.stopPropagation()}>
+                            <textarea
+                              rows={3}
+                              value={editedRationales[i] ?? c.rationale}
+                              onChange={e => setEditedRationales(prev => ({ ...prev, [i]: e.target.value }))}
+                              className="w-full px-2 py-1 border border-blue-300 rounded text-xs bg-blue-50 focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none"
+                            />
+                            <button
+                              onClick={() => setEditingRationaleIdx(null)}
+                              className="mt-1 text-[10px] text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                              Save edit
+                            </button>
+                          </div>
+                        ) : (
+                          <p className="text-gray-500 leading-relaxed mb-1.5">{editedRationales[i] ?? c.rationale}</p>
+                        )}
                         <div className="flex flex-wrap gap-1">
                           {c.evidence_sources.map(e => (
                             <span key={e} className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px]">{e}</span>
@@ -487,6 +555,54 @@ export default function InvestigationWorkspacePage() {
                         </div>
                       </div>
                     ))}
+                    {/* Custom root cause input */}
+                    {!rcConfirmed && (
+                      <div>
+                        {!showCustomCause ? (
+                          <button
+                            onClick={() => setShowCustomCause(true)}
+                            className="w-full py-1.5 text-xs border border-dashed border-gray-300 text-gray-500 rounded hover:border-blue-400 hover:text-blue-600 flex items-center justify-center gap-1"
+                          >
+                            <Plus className="w-3 h-3" /> Add Custom Root Cause
+                          </button>
+                        ) : (
+                          <div className="rounded-md border border-blue-200 bg-blue-50 p-2.5 text-xs space-y-1.5">
+                            <p className="font-medium text-gray-700">Custom Root Cause</p>
+                            <input
+                              type="text"
+                              value={customCauseText}
+                              onChange={e => setCustomCauseText(e.target.value)}
+                              placeholder="Describe root cause..."
+                              className="w-full px-2 py-1 border border-blue-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            />
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => {
+                                  if (!customCauseText.trim()) return;
+                                  const custom: RootCauseCandidate = {
+                                    cause: customCauseText as any,
+                                    confidence: "Medium",
+                                    evidence_sources: ["Investigator Assessment"],
+                                    historical_matches: [],
+                                    similar_count: 0,
+                                    rationale: `Custom root cause identified by investigator: ${customCauseText}`,
+                                  };
+                                  setSelectedCause(custom);
+                                  setRcResult(prev => prev ? { candidates: [...prev.candidates, custom] } : { candidates: [custom] });
+                                  setShowCustomCause(false);
+                                }}
+                                className="flex-1 py-1 bg-blue-600 text-white rounded font-medium hover:bg-blue-700"
+                              >
+                                Add &amp; Select
+                              </button>
+                              <button onClick={() => setShowCustomCause(false)} className="px-2 py-1 border border-gray-300 rounded text-gray-600 hover:bg-white">
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     {!rcConfirmed ? (
                       <button onClick={handleConfirmRootCause} disabled={!selectedCause} className="w-full py-1.5 text-xs bg-green-600 text-white rounded font-medium hover:bg-green-700 disabled:opacity-50">
                         Accept Selected Root Cause
@@ -514,23 +630,105 @@ export default function InvestigationWorkspacePage() {
                 {capaResult && !capaLoading && (
                   <div className="space-y-2">
                     {capaResult.recommendations.map((r, i) => (
-                      <label key={i} className={`flex gap-2 rounded-md border p-2.5 text-xs cursor-pointer transition-colors ${selectedCAPAs.has(i) ? "border-blue-400 bg-blue-50" : "border-gray-200 hover:border-blue-200"}`}>
-                        {!capaConfirmed && (
-                          <input type="checkbox" checked={selectedCAPAs.has(i)} onChange={() => {
-                            setSelectedCAPAs(prev => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n; });
-                          }} className="mt-0.5 h-3.5 w-3.5 text-blue-600" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            <span className="font-medium text-gray-700">{r.action_type}</span>
-                            <span className="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[10px]">{r.suggested_owner}</span>
-                            <span className="text-gray-400 text-[10px]">{r.suggested_days}d</span>
+                      <div key={i} className={`rounded-md border p-2.5 text-xs transition-colors ${selectedCAPAs.has(i) ? "border-blue-400 bg-blue-50" : "border-gray-200"}`}>
+                        <div className="flex items-start gap-2">
+                          {!capaConfirmed && (
+                            <input type="checkbox" checked={selectedCAPAs.has(i)} onChange={() => {
+                              setSelectedCAPAs(prev => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n; });
+                            }} className="mt-0.5 h-3.5 w-3.5 text-blue-600 cursor-pointer shrink-0" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1.5 mb-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-medium text-gray-700">{r.action_type}</span>
+                                <span className="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[10px]">{r.suggested_owner}</span>
+                                <span className="text-gray-400 text-[10px]">{r.suggested_days}d</span>
+                              </div>
+                              {!capaConfirmed && (
+                                <button
+                                  onClick={() => {
+                                    setEditingCAPAIdx(editingCAPAIdx === i ? null : i);
+                                    if (!(i in editedCAPADescs)) setEditedCAPADescs(prev => ({ ...prev, [i]: r.description }));
+                                  }}
+                                  className="text-gray-400 hover:text-blue-600 p-0.5 rounded shrink-0"
+                                  title="Edit description"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                            {editingCAPAIdx === i && !capaConfirmed ? (
+                              <div>
+                                <textarea
+                                  rows={3}
+                                  value={editedCAPADescs[i] ?? r.description}
+                                  onChange={e => setEditedCAPADescs(prev => ({ ...prev, [i]: e.target.value }))}
+                                  className="w-full px-2 py-1 border border-blue-300 rounded text-xs bg-blue-50 focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none mt-0.5"
+                                />
+                                <button onClick={() => setEditingCAPAIdx(null)} className="mt-1 text-[10px] text-blue-600 hover:text-blue-800 font-medium">
+                                  Save edit
+                                </button>
+                              </div>
+                            ) : (
+                              <p className="text-gray-600 leading-relaxed">{editedCAPADescs[i] ?? r.description}</p>
+                            )}
+                            <p className="text-green-600 mt-1">{r.effectiveness_note}</p>
                           </div>
-                          <p className="text-gray-600 leading-relaxed">{r.description}</p>
-                          <p className="text-green-600 mt-1">{r.effectiveness_note}</p>
                         </div>
-                      </label>
+                      </div>
                     ))}
+                    {/* Add custom CAPA */}
+                    {!capaConfirmed && (
+                      <div>
+                        {!showAddCAPA ? (
+                          <button
+                            onClick={() => setShowAddCAPA(true)}
+                            className="w-full py-1.5 text-xs border border-dashed border-gray-300 text-gray-500 rounded hover:border-blue-400 hover:text-blue-600 flex items-center justify-center gap-1"
+                          >
+                            <Plus className="w-3 h-3" /> Add Custom CAPA Action
+                          </button>
+                        ) : (
+                          <div className="rounded-md border border-blue-200 bg-blue-50 p-2.5 text-xs space-y-1.5">
+                            <p className="font-medium text-gray-700">Custom CAPA Action</p>
+                            <textarea
+                              rows={2}
+                              value={newCAPADesc}
+                              onChange={e => setNewCAPADesc(e.target.value)}
+                              placeholder="Describe the corrective or preventive action..."
+                              className="w-full px-2 py-1 border border-blue-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none"
+                            />
+                            <div className="flex gap-2">
+                              <select
+                                value={newCAPAOwner}
+                                onChange={e => setNewCAPAOwner(e.target.value as CAPAOwner)}
+                                className="flex-1 px-2 py-1 border border-blue-300 rounded text-xs bg-white"
+                              >
+                                <option>QA Manager</option>
+                                <option>Engineering</option>
+                                <option>Manufacturing Lead</option>
+                                <option>Quality Systems</option>
+                              </select>
+                              <input
+                                type="number"
+                                value={newCAPADays}
+                                onChange={e => setNewCAPADays(Number(e.target.value))}
+                                className="w-16 px-2 py-1 border border-blue-300 rounded text-xs"
+                                min={1}
+                              />
+                              <span className="flex items-center text-gray-400 text-[10px]">days</span>
+                            </div>
+                            <div className="flex gap-1.5">
+                              <button onClick={handleAddCustomCAPA} className="flex-1 py-1 bg-blue-600 text-white rounded font-medium hover:bg-blue-700">
+                                Add Action
+                              </button>
+                              <button onClick={() => setShowAddCAPA(false)} className="px-2 py-1 border border-gray-300 rounded text-gray-600 hover:bg-white">
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     {!capaConfirmed ? (
                       <button onClick={handleConfirmCAPA} disabled={selectedCAPAs.size === 0} className="w-full py-1.5 text-xs bg-green-600 text-white rounded font-medium hover:bg-green-700 disabled:opacity-50">
                         Approve CAPA Plan ({selectedCAPAs.size} action{selectedCAPAs.size !== 1 ? "s" : ""})
@@ -588,7 +786,15 @@ export default function InvestigationWorkspacePage() {
                       </div>
                     )}
                     {summaryConfirmed && (
-                      <div className="flex items-center gap-1.5 text-xs text-green-700"><CheckCircle className="w-3.5 h-3.5" /> Summary approved — submitted for QA Review</div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1.5 text-xs text-green-700"><CheckCircle className="w-3.5 h-3.5" /> Summary approved — submitted for QA Review</div>
+                        <a
+                          href={`/deviations/${deviation.deviation_id}/report`}
+                          className="flex items-center justify-center gap-1.5 w-full py-1.5 text-xs border border-blue-300 text-blue-700 rounded font-medium hover:bg-blue-50"
+                        >
+                          <ExternalLink className="w-3 h-3" /> View Full Investigation Report
+                        </a>
+                      </div>
                     )}
                   </div>
                 )}

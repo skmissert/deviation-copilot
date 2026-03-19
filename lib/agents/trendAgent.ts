@@ -17,6 +17,7 @@ export interface TrendResult {
 const RECOMMENDATIONS: Record<RootCause, string> = {
   "Documentation Error": "Implement site-wide electronic batch record system with mandatory completion validation.",
   "Equipment Calibration Drift": "Deploy predictive calibration monitoring and reduce calibration intervals for critical instruments.",
+  "Human Factors": "Implement fatigue risk management, error-proofing redesign for high-risk steps, and structured shift handoff protocols.",
   "Operator Training Gap": "Establish quarterly competency assessment program for all GMP operators.",
   "Process Parameter Drift": "Implement statistical process control with automated out-of-trend alerts.",
   "Environmental Excursion": "Deploy continuous environmental monitoring with real-time alert escalation.",
