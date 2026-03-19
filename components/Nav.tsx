@@ -1,13 +1,15 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, FileText, ClipboardList, GitBranch, LayoutDashboard } from "lucide-react";
+import { Activity, FileText, ClipboardList, GitBranch, LayoutDashboard, Network, BookOpen } from "lucide-react";
 
 const links = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/deviations", label: "Deviations", icon: FileText },
   { href: "/capas", label: "CAPA Tracker", icon: ClipboardList },
   { href: "/simulation", label: "Digital Twin", icon: GitBranch },
+  { href: "/process-map", label: "Process Mining", icon: Network },
+  { href: "/enterprise-explainer", label: "ERP Explainer", icon: BookOpen },
 ];
 
 export default function Nav() {
