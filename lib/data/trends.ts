@@ -1,8 +1,7 @@
 export const rootCauseTrend = [
+  { cause: "Human & Operator Factors", count: 16, pct: 26.7 },
   { cause: "Documentation Error", count: 15, pct: 25.0 },
   { cause: "Equipment Calibration Drift", count: 11, pct: 18.3 },
-  { cause: "Human Factors", count: 10, pct: 16.7 },
-  { cause: "Operator Training Gap", count: 6, pct: 10.0 },
   { cause: "Process Parameter Drift", count: 9, pct: 15.0 },
   { cause: "Environmental Excursion", count: 6, pct: 10.0 },
   { cause: "Supplier Material Issue", count: 3, pct: 5.0 },

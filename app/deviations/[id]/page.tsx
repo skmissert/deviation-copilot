@@ -486,7 +486,7 @@ export default function InvestigationWorkspacePage() {
               </div>
 
               {/* Section 2: Root Cause */}
-              <div className={`p-4 ${!intakeConfirmed ? "opacity-40 pointer-events-none" : rcConfirmed ? "opacity-75" : ""}`}>
+              <div className={`p-4 ${!intakeConfirmed ? "opacity-40 pointer-events-none" : rcConfirmed ? "opacity-75 pointer-events-none" : ""}`}>
                 <SectionHeader icon={Sparkles} title="Root Cause Analysis" status={rcLoading ? "loading" : rcConfirmed ? "done" : "idle"} />
                 {!rcResult && !rcLoading && (
                   <button onClick={handleRunRootCause} disabled={!intakeConfirmed} className="w-full py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium disabled:opacity-50">
@@ -615,7 +615,7 @@ export default function InvestigationWorkspacePage() {
               </div>
 
               {/* Section 3: CAPA */}
-              <div className={`p-4 ${!rcConfirmed ? "opacity-40 pointer-events-none" : capaConfirmed ? "opacity-75" : ""}`}>
+              <div className={`p-4 ${!rcConfirmed ? "opacity-40 pointer-events-none" : capaConfirmed ? "opacity-75 pointer-events-none" : ""}`}>
                 <SectionHeader icon={Wrench} title="CAPA Recommendations" status={capaLoading ? "loading" : capaConfirmed ? "done" : "idle"} />
                 {!capaResult && !capaLoading && (
                   <button onClick={handleRunCAPA} disabled={!rcConfirmed} className="w-full py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium disabled:opacity-50">

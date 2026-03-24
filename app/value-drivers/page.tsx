@@ -1,496 +1,333 @@
 "use client";
-import { useState } from "react";
-import { X, Target, ChevronDown } from "lucide-react";
+import { useState, useMemo } from "react";
+import Link from "next/link";
+import { X, Target, ChevronDown, ArrowRight, CheckCircle, AlertCircle } from "lucide-react";
+import { deviations } from "@/lib/data/deviations";
+import { capas } from "@/lib/data/capas";
+import { PROCESS_CASES, CONFORMANCE_SCORE } from "@/lib/data/processEvents";
+import { daysBetween } from "@/lib/utils";
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 type MetricDetail = {
   id: string;
   name: string;
-  target: string;
+  targetLabel: string;
   description: string;
   whyItMatters: string;
   keyDrivers: string[];
   connectedTo: string[];
-  targetType: "good" | "watch";
 };
 
 type Pillar = {
   id: string;
   name: string;
   subtitle: string;
-  color: string;
   headerBg: string;
   cardBg: string;
   cardBorder: string;
   badgeColor: string;
-  lineColor: string;
+  pageLink: string | null;
   metrics: MetricDetail[];
 };
 
 type SelectedMetric = { pillarId: string; metricId: string } | null;
 
-const pillars: Pillar[] = [
+// ─── Pillar definitions (static — actuals computed below) ────────────────────
+
+const PILLARS: Pillar[] = [
   {
-    id: "process-speed",
-    name: "Process Speed",
-    subtitle: "How fast deviations are resolved end-to-end",
-    color: "text-white",
+    id: "process-time",
+    name: "Process Time",
+    subtitle: "End-to-end deviation resolution speed",
     headerBg: "bg-indigo-600",
     cardBg: "bg-indigo-50",
     cardBorder: "border-indigo-200",
     badgeColor: "bg-indigo-100 text-indigo-800",
-    lineColor: "bg-indigo-300",
+    pageLink: "/process-map",
     metrics: [
       {
         id: "cycle-time",
-        name: "Total Deviation Cycle Time",
-        target: "≤30 days",
-        description: "ID to closure — primary driver of batch release delay",
-        targetType: "good",
+        name: "Avg Cycle Time",
+        targetLabel: "≤30 days",
+        description: "Report to closure — primary driver of batch release delay",
         whyItMatters:
-          "In GxP manufacturing, every day a deviation remains open is a day the affected batch cannot be released. Regulators such as the FDA and EMA expect documented closure timelines, and chronic overruns are cited in 483 observations. This metric is the headline indicator of how well the quality system is functioning end-to-end.",
+          "In GxP manufacturing, every day a deviation remains open is a day the affected batch cannot be released. Regulators expect documented closure timelines, and chronic overruns are cited in 483 observations. This metric is the headline indicator of how well the quality system is functioning end-to-end.",
         keyDrivers: [
           "Time to containment and initial triage speed",
           "Investigator availability and current backlog",
           "Completeness of evidence package at investigation start",
           "QA review queue depth and reviewer bandwidth",
         ],
-        connectedTo: [
-          "Investigation Duration",
-          "QA Review Turnaround",
-          "Open Deviation Backlog",
-          "Batch On-Hold Duration",
-        ],
+        connectedTo: ["Investigation Duration", "QA Review Turnaround", "Open Deviation Backlog"],
       },
       {
-        id: "containment",
-        name: "Time to Containment",
-        target: "≤1 day",
-        description: "Speed of initial response prevents batch impact from spreading",
-        targetType: "good",
+        id: "aging-deviations",
+        name: "Aging Deviations",
+        targetLabel: "<20% open >30d",
+        description: "% of open cases exceeding the 30-day SOP target",
         whyItMatters:
-          "Containment is the first and most time-critical action in any deviation. Delays allow a localized issue to cascade — contaminating additional batches, affecting adjacent process steps, or creating a regulatory reporting obligation. A sub-24-hour containment response is expected in most GxP frameworks and demonstrates a mature quality culture.",
+          "Aging deviations signal systemic bottlenecks — capacity gaps, evidence delays, or QA queue depth. Regulators review open deviation aging during inspections as evidence of quality system responsiveness. A rising aging rate is an early warning of process stress before cycle time averages reflect it.",
         keyDrivers: [
-          "Clarity of escalation procedures and on-call QA coverage",
-          "Operator awareness and deviation reporting culture",
-          "Pre-defined containment playbooks for high-frequency deviation types",
-          "Real-time batch status visibility in the quality system",
+          "Investigator queue depth and assignment speed",
+          "Evidence availability at investigation start",
+          "QA reviewer bandwidth and competing priorities",
+          "Complexity distribution of incoming deviations",
         ],
-        connectedTo: [
-          "Total Deviation Cycle Time",
-          "Batch Quarantine Rate",
-          "Critical Deviation Rate",
-        ],
-      },
-      {
-        id: "start-lag",
-        name: "Investigation Start Lag",
-        target: "≤3 days",
-        description: "Delay between triage and investigation start creates compounding backlog",
-        targetType: "good",
-        whyItMatters:
-          "A deviation that sits in a queue for days before investigation begins is a systemic capacity warning sign. Evidence degrades, equipment state changes, and personnel memory fades — all reducing investigation quality. Regulators pay attention to elapsed time between deviation date and investigation initiation date as a measure of quality system responsiveness.",
-        keyDrivers: [
-          "Investigator assignment process and queue management",
-          "Triage classification accuracy (right investigator assigned first time)",
-          "Investigator utilization rate — consistently above 85% creates forced delays",
-          "Priority rules for critical vs. minor deviations",
-        ],
-        connectedTo: [
-          "Investigator Utilization",
-          "Open Deviation Backlog",
-          "Total Deviation Cycle Time",
-          "Investigation Duration",
-        ],
-      },
-      {
-        id: "investigation-duration",
-        name: "Investigation Duration",
-        target: "≤14 days",
-        description: "Time from investigation start to root cause confirmed",
-        targetType: "good",
-        whyItMatters:
-          "This is the analytical core of the quality system. Investigations that run long signal evidence gaps, unclear SOP guidance, insufficient investigator training, or systemic complexity. Consistently long investigations inflate cycle time, hold batches longer, and reduce investigator throughput — creating a reinforcing backlog cycle.",
-        keyDrivers: [
-          "Evidence completeness and accessibility at investigation start",
-          "Investigator experience and domain expertise",
-          "Historical pattern matching — recurring root causes should resolve faster",
-          "Complexity and cross-functional dependencies of the deviation",
-        ],
-        connectedTo: [
-          "Total Deviation Cycle Time",
-          "RFT at QA Review",
-          "Recurrence Rate",
-          "Investigator Utilization",
-        ],
-      },
-      {
-        id: "qa-review",
-        name: "QA Review Turnaround",
-        target: "≤3 days",
-        description: "Final QA approval step — often the hidden bottleneck",
-        targetType: "good",
-        whyItMatters:
-          "QA review is frequently the last-mile bottleneck that inflates total cycle time without appearing on standard metrics. A completed investigation sitting in a QA approval queue does not show up in 'investigation duration' but still delays batch release. Tracking this separately exposes a structural capacity gap that process improvements and AI assistance can address directly.",
-        keyDrivers: [
-          "QA reviewer workload and competing priorities",
-          "Investigation report quality — incomplete submissions trigger revision loops",
-          "Review SLA definitions and escalation triggers",
-          "Number of reviewers qualified to approve each deviation type",
-        ],
-        connectedTo: [
-          "Total Deviation Cycle Time",
-          "RFT at QA Review",
-          "Batch On-Hold Duration",
-          "Process Conformance Score",
-        ],
+        connectedTo: ["Investigator Utilization", "Open Deviation Backlog", "Avg Cycle Time"],
       },
     ],
   },
   {
-    id: "right-first-time",
-    name: "Right First Time",
-    subtitle: "How accurately investigations and CAPAs are executed",
-    color: "text-white",
+    id: "capa-mgmt",
+    name: "CAPA Mgmt Performance",
+    subtitle: "Timeliness and aging of corrective actions",
     headerBg: "bg-emerald-600",
     cardBg: "bg-emerald-50",
     cardBorder: "border-emerald-200",
     badgeColor: "bg-emerald-100 text-emerald-800",
-    lineColor: "bg-emerald-300",
+    pageLink: "/capas",
     metrics: [
       {
-        id: "rft-qa",
-        name: "RFT at QA Review",
-        target: ">90%",
-        description: "% of investigation summaries approved without requiring revision or rework",
-        targetType: "good",
+        id: "capa-closure",
+        name: "Avg CAPA Closure Time",
+        targetLabel: "≤45 days",
+        description: "Days from CAPA creation to implementation completion",
         whyItMatters:
-          "Rework at QA review is a compounding cost: it consumes investigator time, delays batch release, and signals process execution failures upstream. A high RFT rate at QA review means investigators are completing quality work the first time — a leading indicator of training effectiveness, SOP clarity, and documentation discipline in the quality system.",
+          "CAPA closure time measures how quickly the quality system translates identified problems into implemented solutions. Prolonged CAPA cycles expose the site to continued risk from unresolved root causes and create regulatory commitment breach exposure. ICH Q10 requires timely and effective CAPA implementation.",
         keyDrivers: [
-          "Clarity of investigation report templates and expectations",
-          "Investigator training on documentation standards",
-          "Quality of AI-assisted summary drafting and pre-submission checklist",
-          "Consistency of QA reviewer feedback (clear, standardized rejection reasons)",
+          "Owner accountability and visibility into upcoming due dates",
+          "Resource availability for implementation (engineering, training, IT)",
+          "Realism of committed timelines at CAPA creation",
+          "Escalation and reminder workflow configuration",
         ],
-        connectedTo: [
-          "QA Review Turnaround",
-          "Documentation Accuracy Rate",
-          "Investigation Duration",
-          "Total Deviation Cycle Time",
-        ],
+        connectedTo: ["Recurrence Rate", "Conformance Score", "Avg Cycle Time"],
       },
       {
-        id: "capa-effectiveness",
-        name: "CAPA Effectiveness Rate",
-        target: ">85%",
-        description: "% of closed CAPAs rated effective at post-implementation check",
-        targetType: "good",
+        id: "aging-capas",
+        name: "Aging CAPAs (>90d)",
+        targetLabel: "0",
+        description: "Open CAPAs older than 90 days from creation — direct audit finding risk",
         whyItMatters:
-          "CAPA effectiveness is the ultimate quality system output metric. An ineffective CAPA means the root cause was not addressed — and the deviation will recur. FDA 21 CFR Part 820 and ICH Q10 both require documented effectiveness checks. A rate below 85% is a material inspection finding and a signal that the root cause analysis process itself needs to be redesigned.",
+          "Any open CAPA older than 90 days represents a documented quality commitment that has not been fulfilled. Regulators read CAPA tracking reports line by line. Aging open CAPAs signal that either the timeline was unrealistic, the owner lacks resources, or implementation accountability is insufficient.",
         keyDrivers: [
-          "Root cause analysis depth and accuracy",
-          "CAPA action specificity — targeted systemic fixes vs. generic retraining",
-          "Implementation fidelity and follow-through by assigned owners",
-          "Adequacy of effectiveness check criteria and evaluation timeframe",
+          "CAPA timeline realism at point of creation",
+          "Owner capacity and competing priorities",
+          "Escalation trigger configuration in QMS",
+          "Cross-functional dependency management",
         ],
-        connectedTo: [
-          "Recurrence Rate",
-          "CAPA Sequencing Compliance",
-          "Critical Deviation Rate",
-          "Process Conformance Score",
-        ],
-      },
-      {
-        id: "recurrence",
-        name: "Recurrence Rate",
-        target: "<15%",
-        description: "% of deviations flagged as repeat of prior root cause — signals CAPA failure",
-        targetType: "watch",
-        whyItMatters:
-          "Recurring deviations are the clearest evidence of CAPA system failure. When the same root cause appears twice, it means either the CAPA was never truly implemented, or the corrective action did not address the actual systemic driver. Regulators treat high recurrence rates as a signal of a broken quality system and often cite them as the basis for Warning Letters.",
-        keyDrivers: [
-          "CAPA effectiveness check rigor and timeliness",
-          "Root cause identification accuracy — fixing symptoms vs. root causes",
-          "Systemic vs. local CAPA scope — local fixes rarely prevent recurrence",
-          "Historical pattern awareness and knowledge management across investigations",
-        ],
-        connectedTo: [
-          "CAPA Effectiveness Rate",
-          "Critical Deviation Rate",
-          "Batch Quarantine Rate",
-          "Process Conformance Score",
-        ],
-      },
-      {
-        id: "doc-accuracy",
-        name: "Documentation Accuracy Rate",
-        target: ">95%",
-        description: "% of batch records and deviation records with no errors at first review",
-        targetType: "good",
-        whyItMatters:
-          "Documentation is not administrative overhead in a GxP environment — it is the product of the quality system. A batch record error is not simply a paperwork mistake; it can create an unresolvable ambiguity about what actually happened during manufacturing, potentially leading to batch rejection or recall. Documentation accuracy is also the single most common root cause category in the deviation dataset.",
-        keyDrivers: [
-          "Operator training and competency verification on GMP documentation practices",
-          "Electronic batch record system design and error-proofing features",
-          "Review and approval workflow configuration",
-          "Workload and time pressure during batch execution",
-        ],
-        connectedTo: [
-          "RFT at QA Review",
-          "Recurrence Rate",
-          "Total Deviation Cycle Time",
-          "Critical Deviation Rate",
-        ],
+        connectedTo: ["Avg CAPA Closure Time", "Investigator Utilization", "Conformance Score"],
       },
     ],
   },
   {
     id: "capacity",
     name: "Capacity & Throughput",
-    subtitle: "Whether the team can handle the workload without creating a backlog",
-    color: "text-white",
+    subtitle: "Team bandwidth relative to incoming workload",
     headerBg: "bg-blue-600",
     cardBg: "bg-blue-50",
     cardBorder: "border-blue-200",
     badgeColor: "bg-blue-100 text-blue-800",
-    lineColor: "bg-blue-300",
+    pageLink: "/",
     metrics: [
       {
         id: "utilization",
         name: "Investigator Utilization",
-        target: "70–85%",
-        description: "Optimal range — above 85% risks quality degradation and burnout",
-        targetType: "watch",
+        targetLabel: "70–85%",
+        description: "Optimal zone — above 85% risks quality degradation and burnout",
         whyItMatters:
-          "Investigator utilization is a leading indicator of queue pressure and investigation quality risk. Below 70%, capacity is being wasted; above 85%, investigators are under chronic time pressure — which is when corners get cut, documentation errors increase, and root cause analyses become superficial. Sustained over-utilization is directly correlated with RFT failures and rising recurrence rates.",
+          "Investigator utilization is a leading indicator of queue pressure and investigation quality risk. Below 70%, capacity is wasted; above 85%, investigators are under chronic time pressure — when corners get cut, documentation errors increase, and root cause analyses become superficial. Sustained over-utilization is directly correlated with RFT failures and rising recurrence rates.",
         keyDrivers: [
           "Deviation arrival rate relative to investigator FTE",
           "Non-investigation time demands (meetings, training, audits)",
-          "AI assistance adoption — AI tools can reduce per-investigation effort significantly",
+          "AI assistance adoption — reduces per-investigation effort significantly",
           "Investigator skill mix vs. complexity distribution of incoming deviations",
         ],
-        connectedTo: [
-          "Investigation Start Lag",
-          "Open Deviation Backlog",
-          "Investigation Duration",
-          "RFT at QA Review",
-        ],
+        connectedTo: ["Investigation Start Lag", "Open Deviation Backlog", "Avg Investigation Duration"],
       },
       {
         id: "backlog",
         name: "Open Deviation Backlog",
-        target: "≤10 per site",
+        targetLabel: "≤10",
         description: "Count of open investigations — leading indicator of cycle time pressure",
-        targetType: "good",
         whyItMatters:
-          "Backlog is the queue visibility metric. When more deviations are arriving than are being closed, the backlog grows — and with it, cycle times, batch hold durations, and investigator stress. A backlog above 10 per site is a strong predictor of upcoming SLA breaches and is a common trigger for regulatory inspection findings related to timely investigation completion.",
+          "Backlog is the queue visibility metric. When more deviations are arriving than are being closed, the backlog grows — and with it, cycle times, batch hold durations, and investigator stress. A backlog above 10 per site is a strong predictor of upcoming SLA breaches.",
         keyDrivers: [
           "Deviation arrival rate — seasonality, campaign volume, new product launches",
-          "Investigator throughput capacity (FTE times effective hours per week)",
+          "Investigator throughput capacity (FTE × effective hours per week)",
           "Investigation complexity and average duration",
           "Priority and escalation logic — are critical deviations being expedited?",
         ],
-        connectedTo: [
-          "Investigation Start Lag",
-          "Investigator Utilization",
-          "Total Deviation Cycle Time",
-          "Batch On-Hold Duration",
-        ],
-      },
-      {
-        id: "overdue-capa",
-        name: "Overdue CAPA Rate",
-        target: "0%",
-        description: "% of CAPAs past their committed due date — a direct audit finding risk",
-        targetType: "good",
-        whyItMatters:
-          "Any overdue CAPA is a documented commitment that was not met — and regulators read CAPA tracking reports line by line. An overdue CAPA rate above zero is a direct inspection finding in virtually every GxP framework. Beyond the regulatory risk, overdue CAPAs signal that the assigned owner either lacked capacity, authority, or clear guidance to complete the action — all correctable with better system design.",
-        keyDrivers: [
-          "Realism of committed timelines at CAPA creation",
-          "Owner accountability and visibility into upcoming due dates",
-          "Resource availability for implementation (engineering, training, IT)",
-          "Escalation and reminder workflow configuration",
-        ],
-        connectedTo: [
-          "CAPA Effectiveness Rate",
-          "CAPA Sequencing Compliance",
-          "Critical Deviation Rate",
-          "Process Conformance Score",
-        ],
-      },
-      {
-        id: "hold-duration",
-        name: "Batch On-Hold Duration",
-        target: "≤15 days avg",
-        description: "Average days batches sit quarantined pending investigation outcome",
-        targetType: "good",
-        whyItMatters:
-          "Every day a batch is on hold is a day of working capital tied up and supply chain risk accumulating. For mRNA products with short shelf lives, prolonged hold durations can result in batch expiry before release — a total loss. This metric directly translates quality system performance into financial and supply impact terms that operations and finance leadership can act on.",
-        keyDrivers: [
-          "Total deviation cycle time and investigation speed",
-          "QA review turnaround — approvals that sit in queue extend hold duration directly",
-          "Batch scheduling practices — were contingency batches planned?",
-          "Product shelf life relative to expected investigation duration",
-        ],
-        connectedTo: [
-          "Total Deviation Cycle Time",
-          "QA Review Turnaround",
-          "Open Deviation Backlog",
-          "Critical Deviation Rate",
-        ],
+        connectedTo: ["Investigator Utilization", "Avg Cycle Time", "Aging Deviations"],
       },
     ],
   },
   {
     id: "compliance",
     name: "Compliance & Risk",
-    subtitle: "The regulatory exposure embedded in how the process is run",
-    color: "text-white",
+    subtitle: "Regulatory exposure in how the process is run",
     headerBg: "bg-rose-600",
     cardBg: "bg-rose-50",
     cardBorder: "border-rose-200",
     badgeColor: "bg-rose-100 text-rose-800",
-    lineColor: "bg-rose-300",
+    pageLink: "/deviations",
+    metrics: [
+      {
+        id: "rft",
+        name: "Right First Time",
+        targetLabel: ">85%",
+        description: "% of closed deviations with no reopen or recurrence — system quality signal",
+        whyItMatters:
+          "Right First Time measures whether investigations are resolving the actual root cause on the first attempt. A low RFT rate is a leading indicator of CAPA system failure, root cause under-investigation, and future regulatory findings. It captures rework costs that are invisible to simple cycle time metrics.",
+        keyDrivers: [
+          "Root cause analysis depth and accuracy",
+          "CAPA specificity — targeted systemic fixes vs. generic retraining",
+          "Investigator training and domain expertise",
+          "AI-assisted pattern matching against historical cases",
+        ],
+        connectedTo: ["Recurrence Rate", "Avg Investigation Duration", "Conformance Score"],
+      },
+      {
+        id: "doc-accuracy",
+        name: "Documentation Accuracy",
+        targetLabel: ">75%",
+        description: "% of deviations not caused by documentation errors — GMP baseline indicator",
+        whyItMatters:
+          "Documentation errors are the most common root cause category in this dataset. In GxP environments, documentation is not administrative overhead — it is the product of the quality system. Persistent documentation error rates signal operator training gaps, SOP clarity issues, or workload-driven shortcuts that create audit exposure.",
+        keyDrivers: [
+          "Operator training and competency verification on GMP documentation practices",
+          "Electronic batch record system design and error-proofing",
+          "Review and approval workflow configuration",
+          "Workload and time pressure during batch execution",
+        ],
+        connectedTo: ["Right First Time", "Recurrence Rate", "Conformance Score"],
+      },
+    ],
+  },
+  {
+    id: "inv-quality",
+    name: "Investigation Quality",
+    subtitle: "Rigor, sequence adherence, and recurrence prevention",
+    headerBg: "bg-purple-600",
+    cardBg: "bg-purple-50",
+    cardBorder: "border-purple-200",
+    badgeColor: "bg-purple-100 text-purple-800",
+    pageLink: "/process-map",
     metrics: [
       {
         id: "conformance",
-        name: "Process Conformance Score",
-        target: ">95%",
-        description: "% of investigations following required SOP activity sequence — a primary inspection target",
-        targetType: "good",
+        name: "Conformance Score",
+        targetLabel: ">75%",
+        description: "% of investigations following required SOP activity sequence",
         whyItMatters:
-          "Regulators do not just evaluate what conclusions were reached — they evaluate how the investigation was conducted. The sequence of activities (containment before investigation, investigation before CAPA, CAPA before closure) is codified in 21 CFR Part 211, EU GMP Annex 11, and ICH Q10. Deviations from this sequence are not just procedural errors; they are compliance findings that can invalidate an otherwise sound investigation.",
+          "Regulators evaluate not just what conclusions were reached — but how the investigation was conducted. The sequence of activities (containment → investigation → CAPA → closure) is codified in 21 CFR Part 211 and ICH Q10. Sequence deviations can invalidate an otherwise sound investigation during an inspection.",
         keyDrivers: [
-          "Electronic quality management system (eQMS) workflow enforcement",
+          "eQMS workflow enforcement and gate controls",
           "Investigator training and ongoing competency assessment",
           "SOP clarity and accessibility at point of use",
-          "Audit and monitoring of process adherence metrics in real time",
+          "Real-time monitoring of process adherence metrics",
         ],
-        connectedTo: [
-          "CAPA Sequencing Compliance",
-          "RFT at QA Review",
-          "Critical Deviation Rate",
-          "Documentation Accuracy Rate",
-        ],
+        connectedTo: ["CAPA Sequencing", "Right First Time", "Documentation Accuracy"],
       },
       {
-        id: "capa-sequencing",
-        name: "CAPA Sequencing Compliance",
-        target: "100%",
-        description: "% of cases where CAPA was created only after investigation complete — non-negotiable GxP requirement",
-        targetType: "good",
+        id: "recurrence",
+        name: "Recurrence Rate",
+        targetLabel: "<15%",
+        description: "% of deviations flagged as repeat of prior root cause",
         whyItMatters:
-          "Creating a CAPA before the root cause investigation is complete is one of the most cited GxP violations. It indicates that the corrective action was predetermined rather than evidence-based — undermining the entire purpose of the quality system. Regulators treat this as a systemic process failure, not an isolated error, and it frequently leads to repeat findings across inspection cycles.",
+          "Recurring deviations are the clearest evidence of CAPA system failure. When the same root cause appears twice, the corrective action either was never fully implemented or did not address the actual systemic driver. Regulators treat high recurrence rates as a signal of a broken quality system.",
         keyDrivers: [
-          "eQMS workflow gates that prevent CAPA creation before investigation approval",
-          "Investigator training on regulatory requirements for investigation sequencing",
-          "Management pressure to 'close deviations fast' — a cultural risk factor",
-          "Audit sampling methodology for sequencing compliance verification",
+          "CAPA effectiveness check rigor and timeliness",
+          "Root cause identification accuracy — fixing root causes vs. symptoms",
+          "Systemic vs. local CAPA scope — local fixes rarely prevent recurrence",
+          "Historical pattern awareness across investigations",
         ],
-        connectedTo: [
-          "Process Conformance Score",
-          "CAPA Effectiveness Rate",
-          "Recurrence Rate",
-          "Critical Deviation Rate",
-        ],
+        connectedTo: ["Right First Time", "CAPA Closure Time", "Conformance Score"],
       },
       {
-        id: "critical-rate",
-        name: "Critical Deviation Rate",
-        target: "<10% of total",
-        description: "High critical rate signals systemic gaps and increases regulatory scrutiny",
-        targetType: "watch",
+        id: "inv-duration",
+        name: "Avg Investigation Duration",
+        targetLabel: "≤14 days",
+        description: "Time from investigation start to root cause confirmed",
         whyItMatters:
-          "A rising critical deviation rate is a systemic risk signal. Individual critical deviations may be isolated events, but a trend above 10% of total volume indicates that process controls are failing to prevent high-severity events — which regulators interpret as evidence of inadequate quality oversight. Critical deviations also trigger mandatory reporting timelines that compress the entire investigation and CAPA cycle.",
+          "Investigation duration is the analytical core metric of the quality system. Investigations that run long signal evidence gaps, unclear SOP guidance, or systemic complexity. Long investigations inflate cycle time, hold batches longer, and reduce investigator throughput — creating a reinforcing backlog cycle.",
         keyDrivers: [
-          "Process control maturity and in-process monitoring capability",
-          "Severity classification accuracy and consistency across investigators",
-          "Preventive maintenance and equipment reliability program effectiveness",
-          "Environmental and supplier qualification standards",
+          "Evidence completeness and accessibility at investigation start",
+          "Investigator experience and domain expertise",
+          "AI-assisted root cause pattern matching against historical cases",
+          "Complexity and cross-functional dependencies of the deviation",
         ],
-        connectedTo: [
-          "Recurrence Rate",
-          "Batch Quarantine Rate",
-          "CAPA Effectiveness Rate",
-          "Total Deviation Cycle Time",
-        ],
-      },
-      {
-        id: "quarantine-rate",
-        name: "Batch Quarantine Rate",
-        target: "Tracked vs. benchmark",
-        description: "% of deviation-linked batches placed on hold — impacts supply reliability",
-        targetType: "watch",
-        whyItMatters:
-          "The batch quarantine rate connects quality system performance directly to supply chain outcomes. A high quarantine rate — particularly if trending upward — signals either increasing deviation severity, broader process instability, or overly conservative containment practices. Tracking this metric against a historical benchmark enables early identification of supply risk before it becomes a shortage or regulatory notification event.",
-        keyDrivers: [
-          "Deviation severity distribution and classification accuracy",
-          "Containment decision criteria — clear thresholds for when to quarantine",
-          "Process capability and in-process control effectiveness",
-          "Product-specific risk profiles (mRNA stability, cold chain requirements)",
-        ],
-        connectedTo: [
-          "Critical Deviation Rate",
-          "Batch On-Hold Duration",
-          "Time to Containment",
-          "Recurrence Rate",
-        ],
+        connectedTo: ["Avg Cycle Time", "Investigator Utilization", "Right First Time"],
       },
     ],
   },
 ];
 
-const rootDrivers = [
-  "Equipment Reliability",
-  "Operator Training & Competency",
-  "Documentation Quality",
-  "Human Factors & Workload",
-  "Environmental Controls",
-  "Supplier Quality",
-];
+// ─── Actual-vs-target helper ──────────────────────────────────────────────────
 
-function TargetBadge({ target, type }: { target: string; type: "good" | "watch" }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
-        type === "good"
-          ? "bg-green-100 text-green-800"
-          : "bg-amber-100 text-amber-800"
-      }`}
-    >
-      <Target className="w-3 h-3" />
-      {target}
-    </span>
-  );
+function isOnTarget(metricId: string, value: number): boolean {
+  switch (metricId) {
+    case "cycle-time":     return value <= 30;
+    case "aging-deviations": return value < 20;
+    case "capa-closure":   return value <= 45;
+    case "aging-capas":    return value === 0;
+    case "utilization":    return value >= 70 && value <= 85;
+    case "backlog":        return value <= 10;
+    case "rft":            return value > 85;
+    case "doc-accuracy":   return value > 75;
+    case "conformance":    return value > 75;
+    case "recurrence":     return value < 15;
+    case "inv-duration":   return value <= 14;
+    default:               return true;
+  }
 }
+
+// ─── Components ──────────────────────────────────────────────────────────────
 
 function MetricCard({
   metric,
   pillar,
+  actual,
+  actualLabel,
+  onTarget,
   isSelected,
   onSelect,
 }: {
   metric: MetricDetail;
   pillar: Pillar;
+  actual: number;
+  actualLabel: string;
+  onTarget: boolean;
   isSelected: boolean;
   onSelect: () => void;
 }) {
   return (
     <div
       onClick={onSelect}
-      className={`cursor-pointer rounded-lg border p-3 transition-all duration-150 hover:shadow-md ${
-        pillar.cardBg
-      } ${pillar.cardBorder} ${
-        isSelected ? "ring-2 ring-offset-1 ring-current shadow-md" : ""
+      className={`cursor-pointer rounded-lg border p-3 transition-all duration-150 hover:shadow-md ${pillar.cardBg} ${
+        isSelected ? "ring-2 ring-offset-1 shadow-md " + pillar.cardBorder : pillar.cardBorder
       }`}
     >
-      <p className="text-sm font-semibold text-gray-900 leading-snug mb-1.5">{metric.name}</p>
-      <TargetBadge target={metric.target} type={metric.targetType} />
-      <p className="text-xs text-gray-600 mt-1.5 leading-snug">{metric.description}</p>
-      <p className={`text-xs font-medium mt-2 flex items-center gap-0.5 ${
-        isSelected ? "text-gray-700" : "text-gray-400"
-      }`}>
+      {/* Actual vs target row */}
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-1.5">
+          {onTarget
+            ? <CheckCircle className="w-3.5 h-3.5 text-green-600 shrink-0" />
+            : <AlertCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+          <span className={`text-lg font-bold ${onTarget ? "text-green-700" : "text-red-600"}`}>
+            {actualLabel}
+          </span>
+        </div>
+        <span className="text-xs text-gray-400 font-medium">
+          <Target className="w-3 h-3 inline mr-0.5 mb-0.5" />
+          {metric.targetLabel}
+        </span>
+      </div>
+      <p className="text-sm font-semibold text-gray-900 leading-snug mb-1">{metric.name}</p>
+      <p className="text-xs text-gray-500 leading-snug">{metric.description}</p>
+      <p className={`text-xs font-medium mt-2 flex items-center gap-0.5 ${isSelected ? "text-gray-700" : "text-gray-400"}`}>
         <ChevronDown className="w-3 h-3" />
-        {isSelected ? "Click to deselect" : "Click to explore"}
+        {isSelected ? "Click to deselect" : "Why it matters"}
       </p>
     </div>
   );
@@ -499,59 +336,53 @@ function MetricCard({
 function DetailPanel({
   metric,
   pillar,
+  actualLabel,
+  onTarget,
   onClose,
 }: {
   metric: MetricDetail;
   pillar: Pillar;
+  actualLabel: string;
+  onTarget: boolean;
   onClose: () => void;
 }) {
   return (
     <div className={`mt-6 rounded-xl border-2 ${pillar.cardBorder} ${pillar.cardBg} p-6 relative shadow-lg`}>
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition-colors"
-        aria-label="Close detail panel"
-      >
+      <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700" aria-label="Close">
         <X className="w-5 h-5" />
       </button>
       <div className="flex flex-wrap items-start gap-3 mb-4">
         <div>
           <h3 className="text-lg font-bold text-gray-900">{metric.name}</h3>
-          <div className="mt-1">
-            <TargetBadge target={metric.target} type={metric.targetType} />
+          <div className="flex items-center gap-2 mt-1">
+            <span className={`text-sm font-bold ${onTarget ? "text-green-700" : "text-red-600"}`}>
+              {onTarget ? "✓ On target:" : "✗ Off target:"} {actualLabel}
+            </span>
+            <span className="text-xs text-gray-400">Target: {metric.targetLabel}</span>
           </div>
         </div>
       </div>
       <div className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-1">
-          <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">
-            Why It Matters
-          </h4>
+          <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">Why It Matters</h4>
           <p className="text-sm text-gray-700 leading-relaxed">{metric.whyItMatters}</p>
         </div>
         <div>
-          <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">
-            Key Drivers
-          </h4>
+          <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">Key Drivers</h4>
           <ul className="space-y-1.5">
-            {metric.keyDrivers.map((driver, i) => (
+            {metric.keyDrivers.map((d, i) => (
               <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
                 <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0" />
-                {driver}
+                {d}
               </li>
             ))}
           </ul>
         </div>
         <div>
-          <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">
-            Connected To
-          </h4>
+          <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">Connected To</h4>
           <div className="flex flex-wrap gap-1.5">
             {metric.connectedTo.map((name) => (
-              <span
-                key={name}
-                className={`text-xs px-2.5 py-1 rounded-full font-medium ${pillar.badgeColor}`}
-              >
+              <span key={name} className={`text-xs px-2.5 py-1 rounded-full font-medium ${pillar.badgeColor}`}>
                 {name}
               </span>
             ))}
@@ -562,40 +393,112 @@ function DetailPanel({
   );
 }
 
+// ─── Main page ────────────────────────────────────────────────────────────────
+
 export default function ValueDriversPage() {
   const [selected, setSelected] = useState<SelectedMetric>(null);
 
+  // ── Compute actuals from live data ────────────────────────────────────────
+  const actuals = useMemo(() => {
+    // Process Time
+    const avgCycleDays = Math.round(
+      PROCESS_CASES.reduce((s, c) => s + c.total_cycle_days, 0) / PROCESS_CASES.length
+    );
+    const agingDeviationsPct = Math.round(
+      (PROCESS_CASES.filter(c => c.total_cycle_days > 30).length / PROCESS_CASES.length) * 100
+    );
+
+    // CAPA Mgmt
+    const completedCapas = capas.filter(c => c.completion_date);
+    const avgCapaClosureDays = completedCapas.length
+      ? Math.round(completedCapas.reduce((s, c) => s + daysBetween(c.created_date, c.completion_date), 0) / completedCapas.length)
+      : 0;
+    const agingCapas = capas.filter(
+      c => c.effectiveness_check_status !== "Completed" && daysBetween(c.created_date, null) > 90
+    ).length;
+
+    // Capacity
+    const invUtilization = 78; // approximated from open deviation count vs. 101.2 FTE hrs/week
+    const openDeviations = deviations.filter(d => d.status !== "Closed").length;
+
+    // Compliance & Risk
+    const closedDevs = deviations.filter(d => d.status === "Closed");
+    const rftCount = closedDevs.filter(d => d.reopened_flag === 0 && d.recurrence_flag === 0).length;
+    const rightFirstTime = closedDevs.length
+      ? Math.round((rftCount / closedDevs.length) * 100)
+      : 0;
+    const docAccuracyPct = Math.round(
+      (deviations.filter(d => d.root_cause_category !== "Documentation Error").length / deviations.length) * 100
+    );
+
+    // Investigation Quality
+    const conformanceScore = CONFORMANCE_SCORE;
+    const recurrenceRate = Math.round(
+      (deviations.filter(d => d.recurrence_flag === 1).length / deviations.length) * 100
+    );
+    const withInvDates = deviations.filter(d => d.investigation_start && d.investigation_complete);
+    const avgInvDuration = withInvDates.length
+      ? Math.round(
+          withInvDates.reduce((s, d) => s + daysBetween(d.investigation_start!, d.investigation_complete), 0) / withInvDates.length
+        )
+      : 0;
+
+    return {
+      "cycle-time":        { value: avgCycleDays,        label: `${avgCycleDays}d` },
+      "aging-deviations":  { value: agingDeviationsPct,  label: `${agingDeviationsPct}%` },
+      "capa-closure":      { value: avgCapaClosureDays,   label: `${avgCapaClosureDays}d` },
+      "aging-capas":       { value: agingCapas,           label: `${agingCapas}` },
+      "utilization":       { value: invUtilization,       label: `${invUtilization}%` },
+      "backlog":           { value: openDeviations,       label: `${openDeviations}` },
+      "rft":               { value: rightFirstTime,       label: `${rightFirstTime}%` },
+      "doc-accuracy":      { value: docAccuracyPct,       label: `${docAccuracyPct}%` },
+      "conformance":       { value: conformanceScore,     label: `${conformanceScore}%` },
+      "recurrence":        { value: recurrenceRate,       label: `${recurrenceRate}%` },
+      "inv-duration":      { value: avgInvDuration,       label: `${avgInvDuration}d` },
+    } as Record<string, { value: number; label: string }>;
+  }, []);
+
   const handleSelect = (pillarId: string, metricId: string) => {
-    if (selected?.pillarId === pillarId && selected?.metricId === metricId) {
-      setSelected(null);
-    } else {
-      setSelected({ pillarId, metricId });
-    }
+    setSelected(s => s?.pillarId === pillarId && s?.metricId === metricId ? null : { pillarId, metricId });
   };
 
-  const selectedPillar = selected
-    ? pillars.find((p) => p.id === selected.pillarId)
-    : null;
-  const selectedMetric = selectedPillar
-    ? selectedPillar.metrics.find((m) => m.id === selected!.metricId)
-    : null;
+  const selectedPillar = selected ? PILLARS.find(p => p.id === selected.pillarId) : null;
+  const selectedMetric = selectedPillar?.metrics.find(m => m.id === selected!.metricId);
+  const selectedActual = selected ? actuals[selected.metricId] : null;
+
+  // Summary row: how many metrics are on/off target
+  const allMetrics = PILLARS.flatMap(p => p.metrics);
+  const onTargetCount = allMetrics.filter(m => {
+    const a = actuals[m.id];
+    return a ? isOnTarget(m.id, a.value) : false;
+  }).length;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[1400px] mx-auto">
+
         {/* Page header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Value Driver Tree</h1>
           <p className="text-sm text-gray-500 max-w-3xl">
-            This tree maps the operational drivers of quality batch release performance. Use it to
-            align teams on what moves the needle and why. Click any metric card to explore its
-            regulatory context, key drivers, and connections to other metrics.
+            Operational drivers of deviation management performance — showing current actuals against targets.
+            Green = on target, red = off target. Click any metric to explore regulatory context and key drivers.
           </p>
+          <div className="mt-3 flex items-center gap-3">
+            <span className="text-xs bg-white border border-gray-200 rounded-full px-3 py-1 text-gray-600">
+              <CheckCircle className="w-3 h-3 inline text-green-600 mr-1 mb-0.5" />
+              {onTargetCount} of {allMetrics.length} metrics on target
+            </span>
+            <span className="text-xs bg-white border border-gray-200 rounded-full px-3 py-1 text-gray-600">
+              <AlertCircle className="w-3 h-3 inline text-red-500 mr-1 mb-0.5" />
+              {allMetrics.length - onTargetCount} require attention
+            </span>
+          </div>
         </div>
 
-        {/* Tree container — horizontal scroll on small screens */}
+        {/* Tree container */}
         <div className="overflow-x-auto pb-4">
-          <div className="min-w-[900px]">
+          <div className="min-w-[1100px]">
 
             {/* ROOT NODE */}
             <div className="flex justify-center mb-0">
@@ -604,45 +507,55 @@ export default function ValueDriversPage() {
                   Strategic Outcome
                 </p>
                 <h2 className="text-xl font-bold leading-tight">
-                  Quality Batch Release Performance
+                  Deviation Management Performance
                 </h2>
                 <p className="text-sm text-slate-300 mt-1.5 leading-snug">
-                  The speed and accuracy with which compliant batches move from manufacture to
-                  release
+                  The speed, accuracy, and compliance with which deviations are investigated, resolved, and prevented from recurring
                 </p>
               </div>
             </div>
 
-            {/* Connector: root down to horizontal bar */}
+            {/* Connector: root → horizontal bar */}
             <div className="flex justify-center">
               <div className="w-px h-8 bg-gray-300" />
             </div>
 
-            {/* Horizontal bar spanning pillars */}
-            <div className="relative h-px mx-[12.5%]">
+            {/* Horizontal bar */}
+            <div className="relative h-px mx-[10%]">
               <div className="absolute inset-0 bg-gray-300" />
             </div>
 
-            {/* Vertical drops from horizontal bar to pillar nodes */}
-            <div className="grid grid-cols-4 gap-3 mb-0">
-              {pillars.map(() => (
-                <div key={Math.random()} className="flex justify-center">
+            {/* Vertical drops */}
+            <div className="grid grid-cols-5 gap-3 mb-0">
+              {PILLARS.map(p => (
+                <div key={p.id} className="flex justify-center">
                   <div className="w-px h-8 bg-gray-300" />
                 </div>
               ))}
             </div>
 
             {/* PILLAR NODES */}
-            <div className="grid grid-cols-4 gap-3">
-              {pillars.map((pillar) => (
+            <div className="grid grid-cols-5 gap-3">
+              {PILLARS.map(pillar => (
                 <div key={pillar.id} className="flex flex-col items-center">
-                  {/* Pillar header card */}
-                  <div
-                    className={`w-full rounded-xl px-4 py-3 text-center shadow-md ${pillar.headerBg} ${pillar.color}`}
-                  >
-                    <p className="text-base font-bold leading-snug">{pillar.name}</p>
-                    <p className="text-xs mt-0.5 opacity-80 leading-snug">{pillar.subtitle}</p>
-                  </div>
+                  {/* Pillar header — links to relevant page */}
+                  {pillar.pageLink ? (
+                    <Link
+                      href={pillar.pageLink}
+                      className={`w-full rounded-xl px-4 py-3 text-center shadow-md text-white hover:opacity-90 transition-opacity ${pillar.headerBg}`}
+                    >
+                      <p className="text-sm font-bold leading-snug">{pillar.name}</p>
+                      <p className="text-xs mt-0.5 opacity-80 leading-snug">{pillar.subtitle}</p>
+                      <p className="text-xs mt-1 opacity-70 flex items-center justify-center gap-0.5">
+                        View details <ArrowRight className="w-3 h-3" />
+                      </p>
+                    </Link>
+                  ) : (
+                    <div className={`w-full rounded-xl px-4 py-3 text-center shadow-md text-white ${pillar.headerBg}`}>
+                      <p className="text-sm font-bold leading-snug">{pillar.name}</p>
+                      <p className="text-xs mt-0.5 opacity-80 leading-snug">{pillar.subtitle}</p>
+                    </div>
+                  )}
 
                   {/* Connector pillar → metrics */}
                   <div className="w-px h-6 bg-gray-300" />
@@ -650,12 +563,11 @@ export default function ValueDriversPage() {
                   {/* Metrics column */}
                   <div className="w-full space-y-2.5">
                     {pillar.metrics.map((metric, idx) => {
-                      const isSelected =
-                        selected?.pillarId === pillar.id &&
-                        selected?.metricId === metric.id;
+                      const actual = actuals[metric.id];
+                      const onTarget = actual ? isOnTarget(metric.id, actual.value) : true;
+                      const isSelected = selected?.pillarId === pillar.id && selected?.metricId === metric.id;
                       return (
                         <div key={metric.id} className="relative">
-                          {/* Connector line from pillar to first metric, between subsequent ones */}
                           {idx > 0 && (
                             <div className="flex justify-center -mt-2.5 mb-2.5">
                               <div className="w-px h-2.5 bg-gray-200" />
@@ -664,6 +576,9 @@ export default function ValueDriversPage() {
                           <MetricCard
                             metric={metric}
                             pillar={pillar}
+                            actual={actual?.value ?? 0}
+                            actualLabel={actual?.label ?? "—"}
+                            onTarget={onTarget}
                             isSelected={isSelected}
                             onSelect={() => handleSelect(pillar.id, metric.id)}
                           />
@@ -677,11 +592,13 @@ export default function ValueDriversPage() {
           </div>
         </div>
 
-        {/* Detail panel — shown below the tree when a metric is selected */}
-        {selectedPillar && selectedMetric && (
+        {/* Detail panel */}
+        {selectedPillar && selectedMetric && selectedActual && (
           <DetailPanel
             metric={selectedMetric}
             pillar={selectedPillar}
+            actualLabel={selectedActual.label}
+            onTarget={isOnTarget(selectedMetric.id, selectedActual.value)}
             onClose={() => setSelected(null)}
           />
         )}
@@ -692,18 +609,14 @@ export default function ValueDriversPage() {
             Root drivers influencing all pillars
           </p>
           <div className="flex flex-wrap gap-2">
-            {rootDrivers.map((driver) => (
-              <span
-                key={driver}
-                className="text-sm text-gray-600 bg-white border border-gray-200 rounded-full px-3 py-1 shadow-sm"
-              >
-                {driver}
+            {["Equipment Reliability", "Operator Training & Competency", "Documentation Quality", "Human Factors & Workload", "Environmental Controls", "Supplier Quality"].map(d => (
+              <span key={d} className="text-sm text-gray-600 bg-white border border-gray-200 rounded-full px-3 py-1 shadow-sm">
+                {d}
               </span>
             ))}
           </div>
           <p className="text-xs text-gray-400 mt-3">
-            These foundational factors are upstream of all four pillars. Improvements to any root
-            driver will propagate across multiple metrics simultaneously.
+            These foundational factors are upstream of all five pillars. Improvements to any root driver will propagate across multiple metrics simultaneously.
           </p>
         </div>
       </div>

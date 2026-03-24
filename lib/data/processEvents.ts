@@ -23,14 +23,14 @@ export const ACTIVITY_LABELS: Record<ActivityId, string> = {
   CONTAINMENT_ACTIONED:  "Containment Actioned",
   TRIAGE_COMPLETE:       "Triage & Classification",
   INVESTIGATION_STARTED: "Investigation Started",
-  CAPA_CREATED_EARLY:    "CAPA Created (Pre-emptive)",
+  CAPA_CREATED_EARLY:    "CAPA Created (Early)",
   INVESTIGATION_COMPLETE:"Investigation Complete",
   CAPA_CREATED:          "CAPA Created",
   CAPA_IMPLEMENTED:      "CAPA Implemented",
   REINVESTIGATION:       "Re-investigation",
-  CAPA_REVISED:          "CAPA Revised",
+  CAPA_REVISED:          "CAPA Updated",
   QA_REVIEW:             "QA Review",
-  DIRECTOR_ESCALATION:   "Director Escalation",
+  DIRECTOR_ESCALATION:   "CAPA Review Board Escalation",
   DEV_CLOSED:            "Deviation Closed",
   DEV_REOPENED:          "Deviation Re-opened",
 };
@@ -126,7 +126,7 @@ export function buildProcessCases(): ProcessCase[] {
 
     if (earlyCapaCreated && d.capa_created) {
       push("CAPA_CREATED_EARLY", d.capa_created, d.qa_analyst_id, true,
-        "CAPA created before investigation complete (sequence violation)");
+        "CAPA created before investigation complete");
       variantId = 4;
     }
 
@@ -154,7 +154,7 @@ export function buildProcessCases(): ProcessCase[] {
     if (d.recurrence_flag === 1 && d.capa_created) {
       const capaRevise = addDays(d.capa_created, 10 + jitter(d.deviation_id, 4));
       push("CAPA_REVISED", capaRevise, d.qa_analyst_id, true,
-        "CAPA revised after recurrence — initial action insufficient");
+        "CAPA updated after recurrence — initial action revisited");
       if (variantId < 3) variantId = 3;
     }
 
@@ -304,30 +304,30 @@ export const STEP_METRICS = computeStepMetrics();
 export const VARIANTS: Variant[] = [
   {
     id: 1,
-    label: "Happy Path",
+    label: "Standard Path — With CAPA",
     description: "Reported → Containment → Triage → Investigation → CAPA → QA Review → Closed",
     case_count: PROCESS_CASES.filter(c => c.variant_id === 1 && c.has_rework === false).length,
     pct: 0,
     avg_cycle_days: 0,
     color: "#16a34a",
     steps: ["DEV_REPORTED","CONTAINMENT_ACTIONED","TRIAGE_COMPLETE","INVESTIGATION_STARTED","INVESTIGATION_COMPLETE","CAPA_CREATED","CAPA_IMPLEMENTED","QA_REVIEW","DEV_CLOSED"] as ActivityId[],
-    is_happy_path: true,
+    is_happy_path: false,
   },
   {
     id: 2,
-    label: "No-CAPA Path",
+    label: "Path without CAPA",
     description: "Reported → Containment → Triage → Investigation → QA Review → Closed (no CAPA required)",
     case_count: PROCESS_CASES.filter(c => c.variant_id === 2).length,
     pct: 0,
     avg_cycle_days: 0,
     color: "#2563eb",
     steps: ["DEV_REPORTED","CONTAINMENT_ACTIONED","TRIAGE_COMPLETE","INVESTIGATION_STARTED","INVESTIGATION_COMPLETE","QA_REVIEW","DEV_CLOSED"] as ActivityId[],
-    is_happy_path: false,
+    is_happy_path: true,
   },
   {
     id: 3,
     label: "Rework Loop",
-    description: "Includes re-investigation or CAPA revision due to recurrence or reopened deviation",
+    description: "Includes re-investigation due to recurrence or reopened deviation",
     case_count: PROCESS_CASES.filter(c => c.variant_id === 3).length,
     pct: 0,
     avg_cycle_days: 0,
@@ -337,8 +337,8 @@ export const VARIANTS: Variant[] = [
   },
   {
     id: 4,
-    label: "Out-of-Sequence",
-    description: "CAPA initiated before investigation complete — sequence violation detected",
+    label: "Early CAPA Creation",
+    description: "CAPA initiated before investigation complete — root cause not yet confirmed at time of CAPA creation",
     case_count: PROCESS_CASES.filter(c => c.variant_id === 4).length,
     pct: 0,
     avg_cycle_days: 0,
@@ -348,8 +348,8 @@ export const VARIANTS: Variant[] = [
   },
   {
     id: 5,
-    label: "Escalated (Critical)",
-    description: "Director escalation triggered — extended approval cycle for critical deviations",
+    label: "Escalated to CAPA Review Board",
+    description: "CAPA Review Board escalation triggered — extended approval cycle for critical deviations",
     case_count: PROCESS_CASES.filter(c => c.variant_id === 5).length,
     pct: 0,
     avg_cycle_days: 0,
@@ -383,6 +383,15 @@ export interface Inefficiency {
 
 export const INEFFICIENCIES: Inefficiency[] = [
   {
+    id: "out-of-sequence-capa",
+    title: "Early CAPA Creation",
+    detail: "CAPA records opened before investigation was complete in 13% of cases. Root cause confirmation is typically expected before CAPA definition.",
+    impact: "Risk of CAPA actions that do not address the confirmed root cause; potential GxP audit finding",
+    severity: "high",
+    case_count: PROCESS_CASES.filter(c => c.variant_id === 4).length,
+    recommendation: "Consider a soft workflow gate prompting investigators to confirm root cause before CAPA creation; flag for QA review when early creation occurs",
+  },
+  {
     id: "late-containment",
     title: "Late Containment Documentation",
     detail: "Containment actions recorded >2 days after deviation report in 22% of cases. SOP requires same-day documentation.",
@@ -401,15 +410,6 @@ export const INEFFICIENCIES: Inefficiency[] = [
     recommendation: "Auto-assign investigations at triage completion; alert after 24hrs unassigned",
   },
   {
-    id: "out-of-sequence-capa",
-    title: "Out-of-Sequence CAPA Creation",
-    detail: "CAPA records opened before investigation was complete in 13% of cases — root cause not yet confirmed.",
-    impact: "Risk of incorrect CAPA actions; compliance risk in GxP audit",
-    severity: "high",
-    case_count: PROCESS_CASES.filter(c => c.variant_id === 4).length,
-    recommendation: "Enforce system-level workflow gate: block CAPA creation until investigation_complete = true",
-  },
-  {
     id: "capa-overdue",
     title: "CAPA Implementation Delays",
     detail: "31% of CAPAs exceed the 45-day implementation target. Average overdue duration: 11 days.",
@@ -421,7 +421,7 @@ export const INEFFICIENCIES: Inefficiency[] = [
   {
     id: "rework-rate",
     title: "Rework from Incomplete Root Cause Analysis",
-    detail: "15% of cases required re-investigation or CAPA revision due to recurrence. Indicates root cause under-investigation.",
+    detail: "15% of cases required re-investigation due to recurrence or deviation re-opening. Indicates root cause under-investigation.",
     impact: "Each rework adds avg 18 days to cycle time; ~$12K estimated quality cost per rework event",
     severity: "medium",
     case_count: PROCESS_CASES.filter(c => c.has_rework).length,

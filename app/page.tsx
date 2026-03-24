@@ -162,10 +162,11 @@ export default function DashboardPage() {
       <div className="flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-lg px-4 py-3">
         <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
         <div>
-          <p className="text-sm font-semibold text-amber-800">AI Trend Alert</p>
+          <p className="text-sm font-semibold text-amber-800">AI Trend Alert — Increasing Deviation Volume</p>
           <p className="text-sm text-amber-700">
-            Documentation Errors account for 27% of all deviations across 3 process areas. Systemic
-            intervention recommended. Review root cause Pareto below.
+            Deviation volume increased 37% from January (8) to February (11) and has been trending upward since October.
+            Human &amp; Operator Factors is the top root cause (26.7%), with suspected contributions from shift handoff gaps and recent headcount changes.
+            Suggested actions: review investigator capacity allocation, reinforce shift handoff documentation, and assess targeted operator training for high-recurrence process areas.
           </p>
         </div>
       </div>

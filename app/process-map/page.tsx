@@ -159,9 +159,9 @@ function ProcessGraph({ selectedVariant }: { selectedVariant: number | null }) {
                   ${-40} ${270}`}
             fill="none" stroke="#7c3aed" strokeWidth={2}
           />
-          <rect x={-78} y={268} width={75} height={28} rx={4} fill="#f3e8ff" />
-          <text x={-75} y={280} fontSize={8} fill="#5b21b6" fontWeight="600">Director</text>
-          <text x={-75} y={291} fontSize={8} fill="#5b21b6">Escalation ({escalationCount})</text>
+          <rect x={-88} y={268} width={88} height={28} rx={4} fill="#f3e8ff" />
+          <text x={-85} y={280} fontSize={8} fill="#5b21b6" fontWeight="600">CAPA Review</text>
+          <text x={-85} y={291} fontSize={8} fill="#5b21b6">Board ({escalationCount})</text>
         </g>
       )}
 
@@ -268,7 +268,7 @@ export default function ProcessMapPage() {
           </p>
         </div>
         <a href="/enterprise-explainer" className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-          Enterprise ERP Explainer <ArrowRight className="w-3 h-3" />
+          About This Demo <ArrowRight className="w-3 h-3" />
         </a>
       </div>
 
@@ -276,10 +276,10 @@ export default function ProcessMapPage() {
       <div className="grid grid-cols-5 gap-3">
         {[
           { label: "Cases Analyzed",      value: PROCESS_CASES.length,      sub: "deviations mined",              color: "text-gray-900" },
-          { label: "Happy Path Rate",      value: `${happyPathRate}%`,        sub: "follow ideal SOP flow",         color: happyPathRate > 50 ? "text-green-700" : "text-amber-700" },
+          { label: "Path without CAPA",      value: `${happyPathRate}%`,        sub: "no CAPA required",              color: happyPathRate > 50 ? "text-green-700" : "text-amber-700" },
           { label: "Conformance Score",    value: `${CONFORMANCE_SCORE}%`,    sub: "no sequence violations",        color: CONFORMANCE_SCORE > 75 ? "text-green-700" : "text-red-700" },
           { label: "Avg Cycle Time",       value: `${avgCycleTime}d`,         sub: "report to closure",             color: "text-gray-900" },
-          { label: "Rework Rate",          value: `${reworkRate}%`,           sub: "re-investigation or CAPA redo", color: reworkRate > 10 ? "text-red-700" : "text-green-700" },
+          { label: "Rework Rate",          value: `${reworkRate}%`,           sub: "re-investigation required",     color: reworkRate > 10 ? "text-red-700" : "text-green-700" },
         ].map(k => (
           <div key={k.label} className="bg-white rounded-lg border border-gray-200 p-3">
             <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">{k.label}</p>
@@ -331,7 +331,7 @@ export default function ProcessMapPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-gray-800">{v.label}</span>
-                      {v.is_happy_path && <span className="text-[10px] bg-green-100 text-green-800 px-1.5 py-0.5 rounded font-medium">HAPPY PATH</span>}
+                      {v.is_happy_path && <span className="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-medium">NO CAPA</span>}
                     </div>
                     <p className="text-xs text-gray-400 mt-0.5 truncate">{v.description}</p>
                   </div>
@@ -426,7 +426,7 @@ export default function ProcessMapPage() {
             Each node represents an activity; edges are drawn from actual case sequences.
             Violations, rework loops, and bottlenecks are detected by comparing observed sequences against the reference SOP.
             With live ERP data, this analysis updates in real-time across all sites.
-            <a href="/enterprise-explainer" className="ml-2 underline font-medium">See the enterprise data integration explainer →</a>
+            <a href="/enterprise-explainer" className="ml-2 underline font-medium">About This Demo →</a>
           </p>
         </div>
       </div>

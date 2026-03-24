@@ -20,6 +20,7 @@ const STATUS_COLORS: Record<string, string> = {
   Completed: "#16a34a",
   "In Progress": "#2563eb",
   Pending: "#9ca3af",
+  Overdue: "#dc2626",
 };
 
 const OWNER_COLORS: Record<string, string> = {
@@ -65,9 +66,19 @@ export default function CAPATrackerPage() {
 
   // Chart data
   const statusData = useMemo(() => {
-    const counts: Record<string, number> = {};
-    capas.forEach(c => { counts[c.effectiveness_check_status] = (counts[c.effectiveness_check_status] || 0) + 1; });
-    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+    const counts: Record<string, number> = { Completed: 0, "In Progress": 0, Pending: 0, Overdue: 0 };
+    capas.forEach(c => {
+      if (c.effectiveness_check_status === "Completed") {
+        counts["Completed"]++;
+      } else if (isOverdue(c.due_date, c.effectiveness_check_status)) {
+        counts["Overdue"]++;
+      } else if (c.effectiveness_check_status === "In Progress") {
+        counts["In Progress"]++;
+      } else {
+        counts["Pending"]++;
+      }
+    });
+    return Object.entries(counts).filter(([, v]) => v > 0).map(([name, value]) => ({ name, value }));
   }, []);
 
   const ownerData = useMemo(() => {
