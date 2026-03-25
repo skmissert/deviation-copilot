@@ -1,16 +1,15 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, FileText, ClipboardList, GitBranch, LayoutDashboard, Network, BookOpen, TrendingUp, Users } from "lucide-react";
+import { Activity, FileText, ClipboardList, GitBranch, Network, BookOpen, TrendingUp, Users } from "lucide-react";
 
 const links = [
   { href: "/value-drivers", label: "Value Drivers", icon: TrendingUp },
   { href: "/process-map", label: "Process Mining", icon: Network },
-  { href: "/simulation", label: "Digital Twin", icon: GitBranch },
   { href: "/deviations", label: "Deviations", icon: FileText },
   { href: "/capas", label: "CAPA Tracker", icon: ClipboardList },
+  { href: "/simulation", label: "Digital Twin", icon: GitBranch },
   { href: "/people-org", label: "People & Org", icon: Users },
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/enterprise-explainer", label: "About This Demo", icon: BookOpen },
 ];
 
