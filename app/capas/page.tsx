@@ -159,7 +159,7 @@ export default function CAPATrackerPage() {
               className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
             >
               {options.map(o => (
-                <option key={o} value={o}>{o === ALL ? `All ${label}s` : o}</option>
+                <option key={o} value={o}>{o === ALL ? `All ${label === "Status" ? "Statuses" : label + "s"}` : o}</option>
               ))}
             </select>
           ))}
