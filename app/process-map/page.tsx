@@ -238,7 +238,6 @@ export default function ProcessMapPage() {
   const happyPathRate = VARIANTS.find(v => v.is_happy_path)?.pct ?? 0;
   const avgCycleTime  = Math.round(PROCESS_CASES.reduce((s, c) => s + c.total_cycle_days, 0) / PROCESS_CASES.length);
   const reworkRate    = Math.round((PROCESS_CASES.filter(c => c.has_rework).length / PROCESS_CASES.length) * 100);
-  const qualityFindingsCount = PROCESS_CASES.filter(c => c.has_violation || c.has_rework).length;
 
   const stepBarData = useMemo(() =>
     STEP_METRICS
@@ -371,8 +370,8 @@ export default function ProcessMapPage() {
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-gray-800">Conformance Violations &amp; Process Inefficiencies</h2>
-              <span className="text-xs text-red-600 font-medium bg-red-50 px-2 py-0.5 rounded border border-red-100">
-                {qualityFindingsCount} cases with quality findings
+              <span className="text-xs text-gray-500 font-medium">
+                Click any row to expand
               </span>
             </div>
             <div className="space-y-2">
