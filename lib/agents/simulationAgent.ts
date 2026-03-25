@@ -1,75 +1,92 @@
+// ─── Simulation parameters — each maps to a specific AI feature in the app ───
+
 export interface SimulationParams {
-  ai_enabled: boolean;
-  investigator_fte: number;
-  arrival_rate_multiplier: number; // 0.7 to 1.5
-  capa_improvement_pct: number;    // 0 to 0.4
+  copilot_adoption_pct: number;    // 0–100: % of investigations using AI root cause + summary drafting
+  capa_ai_adoption_pct: number;    // 0–100: % of CAPAs using AI action recommendations
+  ai_triage_enabled: boolean;      // AI auto-classification and routing at intake
 }
 
 export interface SimulationResult {
   avg_investigation_days: number;
   avg_capa_days: number;
   investigator_utilization_pct: number;
-  monthly_throughput: number;
-  backlog_size: number;
   recurrence_rate_pct: number;
   fte_freed: number;
 }
+
+// ─── Baseline (current state from live dataset) ───────────────────────────────
 
 const BASELINE = {
   avg_investigation_days: 12.5,
   avg_capa_days: 28.0,
   investigator_utilization_pct: 84,
-  monthly_throughput: 7.2,
-  backlog_size: 5,
-  recurrence_rate_pct: 15,
-  arrival_rate_per_month: 8,
+  recurrence_rate_pct: 15.0,
+  monthly_investigations: 8,
   hours_per_investigation: 16,
-  baseline_fte: 4.7,
 };
-
-export async function runSimulationAgent(params: SimulationParams): Promise<SimulationResult> {
-  await new Promise(r => setTimeout(r, 250));
-
-  const ai_inv_reduction = params.ai_enabled ? 0.35 : 0;
-  const ai_capa_reduction = params.ai_enabled ? 0.25 : 0;
-  const ai_recurrence_reduction = params.ai_enabled ? 0.30 : 0;
-
-  const adj_investigation = BASELINE.avg_investigation_days * (1 - ai_inv_reduction);
-  const adj_capa = BASELINE.avg_capa_days * (1 - ai_capa_reduction - params.capa_improvement_pct);
-  const adj_recurrence = BASELINE.recurrence_rate_pct * (1 - ai_recurrence_reduction);
-
-  const total_capacity_hours = params.investigator_fte * 40 * 0.55 * 4.33;
-  const arrival_rate = BASELINE.arrival_rate_per_month * params.arrival_rate_multiplier;
-  const hours_needed = arrival_rate * BASELINE.hours_per_investigation * (1 - ai_inv_reduction);
-  const utilization = Math.min(99, (hours_needed / total_capacity_hours) * 100);
-
-  const throughput = Math.min(
-    arrival_rate,
-    total_capacity_hours / (BASELINE.hours_per_investigation * (1 - ai_inv_reduction))
-  );
-  const backlog = Math.max(0, Math.round((arrival_rate - throughput) * 2));
-
-  const baseline_util_hours = BASELINE.arrival_rate_per_month * BASELINE.hours_per_investigation;
-  const new_util_hours = arrival_rate * BASELINE.hours_per_investigation * (1 - ai_inv_reduction);
-  const fte_freed = Math.max(0, (baseline_util_hours - new_util_hours) / (40 * 0.55 * 4.33));
-
-  return {
-    avg_investigation_days: Math.round(adj_investigation * 10) / 10,
-    avg_capa_days: Math.round(adj_capa * 10) / 10,
-    investigator_utilization_pct: Math.round(utilization),
-    monthly_throughput: Math.round(throughput * 10) / 10,
-    backlog_size: backlog,
-    recurrence_rate_pct: Math.round(adj_recurrence * 10) / 10,
-    fte_freed: Math.round(fte_freed * 10) / 10,
-  };
-}
 
 export const BASELINE_RESULT: SimulationResult = {
   avg_investigation_days: BASELINE.avg_investigation_days,
   avg_capa_days: BASELINE.avg_capa_days,
   investigator_utilization_pct: BASELINE.investigator_utilization_pct,
-  monthly_throughput: BASELINE.monthly_throughput,
-  backlog_size: BASELINE.backlog_size,
   recurrence_rate_pct: BASELINE.recurrence_rate_pct,
   fte_freed: 0,
 };
+
+// ─── Simulation model ─────────────────────────────────────────────────────────
+//
+// Each lever maps to concrete AI features visible in the app:
+//
+//  copilot_adoption_pct → Root Cause Analysis Agent + Summary Agent (/deviations)
+//    - Reduces avg investigation time by up to 35%
+//    - Reduces recurrence rate by up to 30% (better root cause identification)
+//
+//  capa_ai_adoption_pct → CAPA Recommendation Agent (/capas)
+//    - Reduces avg CAPA cycle time by up to 25%
+//    - Reduces recurrence rate by additional up to 20% (better CAPA targeting)
+//
+//  ai_triage_enabled → Intake Analysis Agent (/deviations — Intake step)
+//    - Reduces investigator utilization by 5% (auto-routing eliminates queue)
+//    - Small additional recurrence benefit from faster classification
+
+export async function runSimulationAgent(params: SimulationParams): Promise<SimulationResult> {
+  await new Promise(r => setTimeout(r, 300));
+
+  const copilot = params.copilot_adoption_pct / 100;   // 0–1
+  const capaAi  = params.capa_ai_adoption_pct  / 100;  // 0–1
+  const triage  = params.ai_triage_enabled;
+
+  // Investigation time: AI copilot reduces by up to 35% at full adoption
+  const avg_investigation_days = BASELINE.avg_investigation_days * (1 - 0.35 * copilot);
+
+  // CAPA cycle time: AI recommendations reduce by up to 25% at full adoption
+  const avg_capa_days = BASELINE.avg_capa_days * (1 - 0.25 * capaAi);
+
+  // Recurrence rate: copilot improves root cause accuracy (-30%), CAPA AI improves action quality (-20%)
+  const recurrence_rate_pct = BASELINE.recurrence_rate_pct
+    * (1 - 0.30 * copilot)
+    * (1 - 0.20 * capaAi)
+    * (triage ? 0.97 : 1); // triage gives a small further benefit
+
+  // Utilization: AI copilot reduces hours per investigation; triage eliminates queue overhead
+  const utilization_reduction = 0.30 * copilot + (triage ? 0.05 : 0);
+  const investigator_utilization_pct = Math.round(
+    BASELINE.investigator_utilization_pct * (1 - utilization_reduction)
+  );
+
+  // FTE freed: hours saved per month / effective FTE hours per month
+  // 8 inv/month × 16 hrs × 35% reduction at full adoption = 44.8 hrs/month saved
+  const effective_fte_hours_per_month = 40 * 0.55 * 4.33; // ~95 hrs/month per FTE
+  const hours_saved = BASELINE.monthly_investigations
+    * BASELINE.hours_per_investigation
+    * 0.35 * copilot;
+  const fte_freed = hours_saved / effective_fte_hours_per_month;
+
+  return {
+    avg_investigation_days: Math.round(avg_investigation_days * 10) / 10,
+    avg_capa_days:           Math.round(avg_capa_days           * 10) / 10,
+    investigator_utilization_pct,
+    recurrence_rate_pct:     Math.round(recurrence_rate_pct     * 10) / 10,
+    fte_freed:               Math.round(fte_freed                * 10) / 10,
+  };
+}

@@ -1,36 +1,16 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, ReferenceLine, Cell
-} from "recharts";
-import { Loader2, TrendingDown, TrendingUp, Minus, Sparkles, Info } from "lucide-react";
+import Link from "next/link";
+import { Loader2, TrendingDown, TrendingUp, Minus, Sparkles, FileText, ClipboardList, Zap, ArrowRight, CheckCircle } from "lucide-react";
 import { runSimulationAgent, SimulationResult, BASELINE_RESULT } from "@/lib/agents/simulationAgent";
 
-interface MetricRow {
-  label: string;
-  key: keyof SimulationResult;
-  format: (v: number) => string;
-  lowerIsBetter: boolean;
-  unit?: string;
-}
-
-const METRICS: MetricRow[] = [
-  { label: "Avg Investigation Time", key: "avg_investigation_days", format: v => `${v} days`, lowerIsBetter: true },
-  { label: "Avg CAPA Cycle Time", key: "avg_capa_days", format: v => `${v} days`, lowerIsBetter: true },
-  { label: "Investigator Utilization", key: "investigator_utilization_pct", format: v => `${v}%`, lowerIsBetter: true, unit: "%" },
-  { label: "Monthly Throughput", key: "monthly_throughput", format: v => `${v} / month`, lowerIsBetter: false },
-  { label: "Active Backlog", key: "backlog_size", format: v => `${v} deviations`, lowerIsBetter: true },
-  { label: "Recurrence Rate", key: "recurrence_rate_pct", format: v => `${v}%`, lowerIsBetter: true },
-  { label: "Investigator FTE Freed", key: "fte_freed", format: v => v > 0 ? `${v} FTE` : "—", lowerIsBetter: false },
-];
+// ─── Delta badge ──────────────────────────────────────────────────────────────
 
 function DeltaBadge({ baseline, scenario, lowerIsBetter }: { baseline: number; scenario: number; lowerIsBetter: boolean }) {
-  if (baseline === 0) return <span className="text-gray-400 text-xs">—</span>;
   const delta = scenario - baseline;
   const pct = Math.abs(Math.round((delta / baseline) * 100));
-  if (Math.abs(delta) < 0.01) return <span className="flex items-center gap-0.5 text-xs text-gray-400"><Minus className="w-3 h-3" /> No change</span>;
+  if (Math.abs(delta) < 0.05) return <span className="flex items-center gap-0.5 text-xs text-gray-400"><Minus className="w-3 h-3" /> No change</span>;
   const isGood = lowerIsBetter ? delta < 0 : delta > 0;
   return (
     <span className={`flex items-center gap-0.5 text-xs font-semibold ${isGood ? "text-green-700" : "text-red-600"}`}>
@@ -40,242 +20,290 @@ function DeltaBadge({ baseline, scenario, lowerIsBetter }: { baseline: number; s
   );
 }
 
-function SliderInput({ label, min, max, step, value, onChange, format }: {
-  label: string; min: number; max: number; step: number; value: number;
-  onChange: (v: number) => void; format: (v: number) => string;
+// ─── Lever card ───────────────────────────────────────────────────────────────
+
+function LeverCard({
+  icon: Icon,
+  iconBg,
+  title,
+  subtitle,
+  description,
+  appLink,
+  appLinkLabel,
+  impacts,
+  children,
+  active,
+}: {
+  icon: React.ElementType;
+  iconBg: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  appLink: string;
+  appLinkLabel: string;
+  impacts: string[];
+  children: React.ReactNode;
+  active: boolean;
 }) {
   return (
+    <div className={`bg-white rounded-xl border-2 p-5 transition-colors ${active ? "border-blue-300 shadow-sm" : "border-gray-200"}`}>
+      <div className="flex items-start gap-3 mb-4">
+        <div className={`w-9 h-9 rounded-lg ${iconBg} flex items-center justify-center shrink-0`}>
+          <Icon className="w-4 h-4 text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-gray-900">{title}</p>
+          <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>
+        </div>
+        <Link href={appLink} className="text-xs text-blue-600 hover:underline flex items-center gap-0.5 shrink-0">
+          {appLinkLabel} <ArrowRight className="w-3 h-3" />
+        </Link>
+      </div>
+
+      <p className="text-xs text-gray-600 leading-relaxed mb-4">{description}</p>
+
+      {/* Slider / toggle */}
+      <div className="mb-4">{children}</div>
+
+      {/* What it improves */}
+      {active && (
+        <div className="border-t border-gray-100 pt-3">
+          <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1.5">Drives improvement in</p>
+          <div className="flex flex-wrap gap-1">
+            {impacts.map(i => (
+              <span key={i} className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full">{i}</span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Slider input ─────────────────────────────────────────────────────────────
+
+function AdoptionSlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const color = value === 0 ? "text-gray-400" : value < 50 ? "text-amber-600" : "text-blue-700";
+  return (
     <div className="space-y-1.5">
-      <div className="flex justify-between">
-        <span className="text-sm font-medium text-gray-700">{label}</span>
-        <span className="text-sm font-bold text-blue-700">{format(value)}</span>
+      <div className="flex justify-between items-baseline">
+        <span className="text-xs text-gray-500">Adoption rate</span>
+        <span className={`text-lg font-black ${color}`}>{value}%</span>
       </div>
       <input
-        type="range" min={min} max={max} step={step} value={value}
-        onChange={e => onChange(parseFloat(e.target.value))}
+        type="range" min={0} max={100} step={10} value={value}
+        onChange={e => onChange(parseInt(e.target.value))}
         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
       />
       <div className="flex justify-between text-xs text-gray-400">
-        <span>{format(min)}</span>
-        <span>{format(max)}</span>
+        <span>0% (off)</span>
+        <span>50% partial</span>
+        <span>100% full</span>
       </div>
     </div>
   );
 }
 
+// ─── Toggle ───────────────────────────────────────────────────────────────────
+
+function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-xs text-gray-500">{label}</span>
+      <button
+        onClick={() => onChange(!value)}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${value ? "bg-blue-600" : "bg-gray-300"}`}
+      >
+        <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${value ? "translate-x-6" : "translate-x-1"}`} />
+      </button>
+    </div>
+  );
+}
+
+// ─── Results metric row ───────────────────────────────────────────────────────
+
+function MetricRow({
+  label, baseline, scenario, format, lowerIsBetter,
+}: {
+  label: string; baseline: number; scenario: number | null; format: (v: number) => string; lowerIsBetter: boolean;
+}) {
+  const hasResult = scenario !== null;
+  return (
+    <div className="grid grid-cols-[1fr_100px_100px_80px] gap-2 items-center py-2.5 border-b border-gray-100 last:border-0">
+      <span className="text-sm text-gray-700">{label}</span>
+      <span className="text-sm font-semibold text-gray-500 text-center">{format(baseline)}</span>
+      <span className={`text-sm font-bold text-center ${hasResult ? "text-gray-900" : "text-gray-300"}`}>
+        {hasResult ? format(scenario!) : "—"}
+      </span>
+      <div className="flex justify-center">
+        {hasResult
+          ? <DeltaBadge baseline={baseline} scenario={scenario!} lowerIsBetter={lowerIsBetter} />
+          : <span className="text-xs text-gray-300">—</span>}
+      </div>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function SimulationPage() {
-  const [aiEnabled, setAiEnabled] = useState(true);
-  const [investigatorFte, setInvestigatorFte] = useState(4.7);
-  const [arrivalMultiplier, setArrivalMultiplier] = useState(1.0);
-  const [capaImprovement, setCapaImprovement] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [scenarioResult, setScenarioResult] = useState<SimulationResult | null>(null);
-  const [hasRun, setHasRun] = useState(false);
+  const [copilotAdoption, setCopilotAdoption] = useState(0);
+  const [capaAdoption, setCapaAdoption]       = useState(0);
+  const [aiTriage, setAiTriage]               = useState(false);
+  const [loading, setLoading]                 = useState(false);
+  const [result, setResult]                   = useState<SimulationResult | null>(null);
 
-  const handleRunSimulation = useCallback(async () => {
+  const anyActive = copilotAdoption > 0 || capaAdoption > 0 || aiTriage;
+
+  const handleRun = useCallback(async () => {
     setLoading(true);
-    const result = await runSimulationAgent({
-      ai_enabled: aiEnabled,
-      investigator_fte: investigatorFte,
-      arrival_rate_multiplier: arrivalMultiplier,
-      capa_improvement_pct: capaImprovement,
+    const r = await runSimulationAgent({
+      copilot_adoption_pct: copilotAdoption,
+      capa_ai_adoption_pct: capaAdoption,
+      ai_triage_enabled:    aiTriage,
     });
-    setScenarioResult(result);
-    setHasRun(true);
+    setResult(r);
     setLoading(false);
-  }, [aiEnabled, investigatorFte, arrivalMultiplier, capaImprovement]);
+  }, [copilotAdoption, capaAdoption, aiTriage]);
 
-  const chartData = [
-    {
-      name: "Investigation\nTime (days)",
-      baseline: BASELINE_RESULT.avg_investigation_days,
-      scenario: scenarioResult?.avg_investigation_days ?? BASELINE_RESULT.avg_investigation_days,
-    },
-    {
-      name: "CAPA Cycle\nTime (days)",
-      baseline: BASELINE_RESULT.avg_capa_days,
-      scenario: scenarioResult?.avg_capa_days ?? BASELINE_RESULT.avg_capa_days,
-    },
-    {
-      name: "Backlog\n(deviations)",
-      baseline: BASELINE_RESULT.backlog_size,
-      scenario: scenarioResult?.backlog_size ?? BASELINE_RESULT.backlog_size,
-    },
-  ];
+  // Build narrative
+  const narrative = result ? (() => {
+    const parts: string[] = [];
+    if (copilotAdoption > 0) parts.push(`AI Copilot at ${copilotAdoption}% adoption reduces investigation time from ${BASELINE_RESULT.avg_investigation_days}d to ${result.avg_investigation_days}d`);
+    if (capaAdoption > 0) parts.push(`AI CAPA recommendations at ${capaAdoption}% adoption reduce CAPA cycle time from ${BASELINE_RESULT.avg_capa_days}d to ${result.avg_capa_days}d`);
+    if (aiTriage) parts.push(`AI intake triage reduces queue overhead and investigator context-switching`);
+    const combined = parts.join(". ");
+    const suffix = result.fte_freed > 0
+      ? ` Combined, this frees ${result.fte_freed} FTE of investigator capacity without adding headcount — available for higher-value quality activities.`
+      : "";
+    return combined + "." + suffix;
+  })() : "";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Digital Twin Simulation</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Model the operational impact of AI assistance and capacity changes on your deviation investigation workflow</p>
+        <p className="text-sm text-gray-500 mt-0.5 max-w-2xl">
+          Model the operational impact of the AI features shown in this app. Each lever corresponds to a specific AI capability — set adoption rates to see the projected effect on investigation and CAPA metrics.
+        </p>
       </div>
 
-      {/* Three-panel layout */}
+      {/* Lever cards */}
       <div className="grid grid-cols-3 gap-4">
-        {/* Panel 1: Baseline */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h2 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-gray-400 inline-block" />
-            Current State (Baseline)
-            <span className="text-xs font-normal text-gray-400 ml-1">Single site · 6-month period</span>
-          </h2>
-          <div className="space-y-2.5">
-            {METRICS.filter(m => m.key !== "fte_freed").map(m => (
-              <div key={m.key} className="flex justify-between items-center py-1.5 border-b border-gray-100 last:border-0">
-                <span className="text-sm text-gray-600">{m.label}</span>
-                <span className="text-sm font-semibold text-gray-900">{m.format(BASELINE_RESULT[m.key] as number)}</span>
-              </div>
-            ))}
-            <div className="pt-2 border-t border-gray-200">
-              <p className="text-xs text-gray-400">Deviation arrival rate: 8/month · 4.7 FTE investigators · 101 hrs/week capacity</p>
-            </div>
-          </div>
-        </div>
 
-        {/* Panel 2: Controls */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h2 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
-            Scenario Controls
-          </h2>
-          <div className="space-y-5">
-            {/* AI Toggle */}
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-700">AI Assistance</p>
-                <p className="text-xs text-gray-400">Reduces investigation time by 35%, CAPA by 25%</p>
-              </div>
-              <button
-                onClick={() => setAiEnabled(v => !v)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${aiEnabled ? "bg-blue-600" : "bg-gray-300"}`}
-              >
-                <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${aiEnabled ? "translate-x-6" : "translate-x-1"}`} />
-              </button>
-            </div>
+        {/* Lever 1: AI Copilot */}
+        <LeverCard
+          icon={Sparkles}
+          iconBg="bg-blue-600"
+          title="AI Copilot — Investigation Workflow"
+          subtitle="Root Cause Analysis + Summary Drafting"
+          description="Investigators use AI-suggested root causes, evidence summaries, and draft investigation reports. Each step requires human review and sign-off. Adoption rate reflects what % of the investigator team is actively using these features."
+          appLink="/deviations"
+          appLinkLabel="See it in Deviations"
+          impacts={["Investigation time", "Recurrence rate", "Investigator utilization", "FTE capacity freed"]}
+          active={copilotAdoption > 0}
+        >
+          <AdoptionSlider value={copilotAdoption} onChange={setCopilotAdoption} />
+        </LeverCard>
 
-            {aiEnabled && (
-              <div className="rounded-md bg-blue-50 border border-blue-100 p-2.5 flex items-start gap-2">
-                <Sparkles className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
-                <p className="text-xs text-blue-700">AI copilot active: reduces investigation research time, surfaces root causes faster, and improves CAPA targeting.</p>
-              </div>
-            )}
+        {/* Lever 2: CAPA AI */}
+        <LeverCard
+          icon={ClipboardList}
+          iconBg="bg-emerald-600"
+          title="AI CAPA Recommendations"
+          subtitle="CAPA Action Suggestions + Owner Assignment"
+          description="AI recommends specific corrective and preventive actions based on confirmed root cause and historical CAPA patterns. Investigators review and approve before any action is created. Adoption reflects % of new CAPAs using AI recommendations."
+          appLink="/capas"
+          appLinkLabel="See it in CAPA Tracker"
+          impacts={["CAPA cycle time", "Recurrence rate"]}
+          active={capaAdoption > 0}
+        >
+          <AdoptionSlider value={capaAdoption} onChange={setCapaAdoption} />
+        </LeverCard>
 
-            <SliderInput
-              label="Investigator FTE"
-              min={2.0} max={10.0} step={0.1}
-              value={investigatorFte}
-              onChange={setInvestigatorFte}
-              format={v => `${v.toFixed(1)} FTE`}
-            />
-
-            <SliderInput
-              label="Deviation Arrival Rate"
-              min={0.7} max={1.5} step={0.05}
-              value={arrivalMultiplier}
-              onChange={setArrivalMultiplier}
-              format={v => v === 1.0 ? "Baseline (8/mo)" : `${v > 1 ? "+" : ""}${Math.round((v - 1) * 100)}% (${Math.round(8 * v)}/mo)`}
-            />
-
-            <SliderInput
-              label="CAPA Process Improvement"
-              min={0} max={0.4} step={0.05}
-              value={capaImprovement}
-              onChange={setCapaImprovement}
-              format={v => v === 0 ? "None" : `${Math.round(v * 100)}% reduction`}
-            />
-
-            <button
-              onClick={handleRunSimulation}
-              disabled={loading}
-              className="w-full py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 disabled:opacity-60 flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Running simulation...</>
-              ) : (
-                <><Sparkles className="w-4 h-4" /> Run Simulation</>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Panel 3: Results */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h2 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
-            Scenario Results
-            {!hasRun && <span className="text-xs font-normal text-gray-400 ml-1">— run simulation to see changes</span>}
-          </h2>
-          {!hasRun ? (
-            <div className="flex flex-col items-center justify-center h-48 text-center">
-              <Sparkles className="w-8 h-8 text-gray-300 mb-2" />
-              <p className="text-sm text-gray-400">Configure your scenario and click</p>
-              <p className="text-sm text-gray-400 font-medium">"Run Simulation"</p>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              <div className="grid grid-cols-3 gap-1 text-xs text-gray-400 font-medium uppercase tracking-wide px-1 mb-1">
-                <span>Metric</span>
-                <span className="text-center">Scenario</span>
-                <span className="text-center">Change</span>
-              </div>
-              {METRICS.map(m => {
-                const baselineVal = BASELINE_RESULT[m.key] as number;
-                const scenarioVal = (scenarioResult?.[m.key] ?? baselineVal) as number;
-                return (
-                  <div key={m.key} className="grid grid-cols-3 gap-1 items-center py-1.5 border-b border-gray-100 last:border-0 px-1">
-                    <span className="text-xs text-gray-600 leading-tight">{m.label}</span>
-                    <span className="text-center text-sm font-semibold text-gray-900">{m.format(scenarioVal)}</span>
-                    <div className="flex justify-center">
-                      <DeltaBadge baseline={baselineVal} scenario={scenarioVal} lowerIsBetter={m.lowerIsBetter} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        {/* Lever 3: AI Triage */}
+        <LeverCard
+          icon={Zap}
+          iconBg="bg-amber-500"
+          title="AI Intake & Triage"
+          subtitle="Auto-Classification + Routing"
+          description="AI auto-classifies deviation severity and routes to the right investigator at intake — before manual review begins. Eliminates queue wait from manual triage and reduces investigator context-switching overhead."
+          appLink="/deviations"
+          appLinkLabel="See Intake step"
+          impacts={["Investigator utilization", "Queue wait"]}
+          active={aiTriage}
+        >
+          <Toggle value={aiTriage} onChange={setAiTriage} label="AI triage active" />
+        </LeverCard>
       </div>
 
-      {/* Chart */}
-      {hasRun && scenarioResult && (
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h3 className="text-sm font-semibold text-gray-800 mb-4">Baseline vs. Scenario Comparison</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip contentStyle={{ fontSize: 12 }} />
-              <Bar dataKey="baseline" name="Baseline" fill="#9ca3af" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="scenario" name="Scenario" fill="#2563eb" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-          <div className="flex gap-6 justify-center mt-2">
-            <span className="flex items-center gap-1.5 text-xs text-gray-500"><span className="w-3 h-3 rounded bg-gray-400 inline-block" /> Baseline</span>
-            <span className="flex items-center gap-1.5 text-xs text-gray-500"><span className="w-3 h-3 rounded bg-blue-600 inline-block" /> Scenario</span>
-          </div>
-        </div>
-      )}
+      {/* Run button */}
+      <div className="flex justify-center">
+        <button
+          onClick={handleRun}
+          disabled={loading || !anyActive}
+          className="px-8 py-3 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 shadow-sm"
+        >
+          {loading
+            ? <><Loader2 className="w-4 h-4 animate-spin" /> Running simulation...</>
+            : <><Sparkles className="w-4 h-4" /> Run Simulation</>}
+        </button>
+        {!anyActive && (
+          <p className="text-xs text-gray-400 ml-4 self-center">Set at least one lever above to model a scenario</p>
+        )}
+      </div>
 
-      {/* Narrative */}
-      {hasRun && scenarioResult && (
-        <div className={`rounded-lg border p-4 ${aiEnabled ? "bg-blue-50 border-blue-200" : "bg-gray-50 border-gray-200"}`}>
-          <div className="flex items-start gap-3">
-            <Info className={`w-5 h-5 mt-0.5 shrink-0 ${aiEnabled ? "text-blue-600" : "text-gray-400"}`} />
-            <div>
-              <p className={`text-sm font-semibold mb-1 ${aiEnabled ? "text-blue-900" : "text-gray-700"}`}>
-                {aiEnabled ? "AI Assistance Impact Summary" : "Scenario Summary (No AI)"}
-              </p>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                {aiEnabled
-                  ? `With AI assistance${investigatorFte !== 4.7 ? ` and ${investigatorFte.toFixed(1)} FTE investigators` : ""}, investigation time drops from ${BASELINE_RESULT.avg_investigation_days} to ${scenarioResult.avg_investigation_days} days (${Math.round((1 - scenarioResult.avg_investigation_days / BASELINE_RESULT.avg_investigation_days) * 100)}% faster). CAPA cycle time reduces to ${scenarioResult.avg_capa_days} days. ${scenarioResult.fte_freed > 0 ? `The equivalent of ${scenarioResult.fte_freed} FTE is freed for higher-value quality work — without adding headcount.` : ""} Investigator utilization drops to ${scenarioResult.investigator_utilization_pct}%, reducing burnout risk and enabling proactive quality activities.`
-                  : `Without AI assistance, investigator utilization is ${scenarioResult.investigator_utilization_pct}% with an active backlog of ${scenarioResult.backlog_size} deviation${scenarioResult.backlog_size !== 1 ? "s" : ""}. Investigation time remains at ${scenarioResult.avg_investigation_days} days. Consider enabling AI assistance to reduce cycle times and free investigator capacity.`}
-              </p>
+      {/* Results table */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="grid grid-cols-[1fr_100px_100px_80px] gap-2 mb-2 px-0">
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Metric</span>
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide text-center">Baseline</span>
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide text-center">Scenario</span>
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide text-center">Change</span>
+        </div>
+        <div className="border-t border-gray-100">
+          {[
+            { label: "Avg Investigation Time", baseline: BASELINE_RESULT.avg_investigation_days, scenario: result?.avg_investigation_days ?? null, format: (v: number) => `${v}d`, lowerIsBetter: true },
+            { label: "Avg CAPA Cycle Time", baseline: BASELINE_RESULT.avg_capa_days, scenario: result?.avg_capa_days ?? null, format: (v: number) => `${v}d`, lowerIsBetter: true },
+            { label: "Investigator Utilization", baseline: BASELINE_RESULT.investigator_utilization_pct, scenario: result?.investigator_utilization_pct ?? null, format: (v: number) => `${v}%`, lowerIsBetter: true },
+            { label: "Recurrence Rate", baseline: BASELINE_RESULT.recurrence_rate_pct, scenario: result?.recurrence_rate_pct ?? null, format: (v: number) => `${v}%`, lowerIsBetter: true },
+            { label: "Investigator FTE Freed", baseline: 0, scenario: result ? result.fte_freed : null, format: (v: number) => v > 0 ? `${v} FTE` : "—", lowerIsBetter: false },
+          ].map(m => (
+            <MetricRow key={m.label} {...m} />
+          ))}
+        </div>
+
+        {!result && (
+          <p className="text-xs text-gray-400 text-center pt-3">
+            Scenario column will populate after running simulation
+          </p>
+        )}
+      </div>
+
+      {/* Narrative / summary */}
+      {result && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 flex items-start gap-3">
+          <CheckCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-blue-900 mb-1">Simulation complete</p>
+            <p className="text-sm text-blue-800 leading-relaxed">{narrative}</p>
+            <div className="flex gap-3 mt-3">
+              <Link href="/deviations" className="text-xs text-blue-700 hover:underline flex items-center gap-1">
+                See AI Copilot in Deviations <ArrowRight className="w-3 h-3" />
+              </Link>
+              <Link href="/capas" className="text-xs text-blue-700 hover:underline flex items-center gap-1">
+                See AI CAPA Recommendations <ArrowRight className="w-3 h-3" />
+              </Link>
+              <Link href="/people-org" className="text-xs text-blue-700 hover:underline flex items-center gap-1">
+                See People & Org implications <ArrowRight className="w-3 h-3" />
+              </Link>
             </div>
           </div>
         </div>
       )}
+
     </div>
   );
 }
