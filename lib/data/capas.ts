@@ -12,6 +12,9 @@ export interface CAPA {
   completion_date: string | null;
   effectiveness_check_status: EffectivenessStatus;
   description: string;
+  ai_recommended?: boolean;
+  ai_suggestion?: string;
+  ai_effectiveness_note?: string;
 }
 
 export const capas: CAPA[] = [
@@ -25,6 +28,9 @@ export const capas: CAPA[] = [
     completion_date: "2025-08-05",
     effectiveness_check_status: "Completed",
     description: "Implement mandatory dual-signature checklist for all batch record completions during shift handoffs.",
+    ai_recommended: true,
+    ai_suggestion: "Implement mandatory dual-signature checklist for all batch record completions during shift handoffs.",
+    ai_effectiveness_note: "Similar corrective actions achieved 90% recurrence reduction in prior batches.",
   },
   {
     capa_id: "CAPA-2025-002",
@@ -36,6 +42,7 @@ export const capas: CAPA[] = [
     completion_date: "2025-08-05",
     effectiveness_check_status: "Completed",
     description: "Retrain all manufacturing operators on batch record SOP documentation requirements and conduct documented competency assessments.",
+    ai_recommended: false,
   },
   {
     capa_id: "CAPA-2025-003",
@@ -47,6 +54,7 @@ export const capas: CAPA[] = [
     completion_date: "2025-08-02",
     effectiveness_check_status: "Completed",
     description: "Review and update packaging deviation documentation forms to include mandatory supervisor sign-off fields.",
+    ai_recommended: false,
   },
   {
     capa_id: "CAPA-2025-004",
@@ -58,6 +66,9 @@ export const capas: CAPA[] = [
     completion_date: "2025-08-25",
     effectiveness_check_status: "Completed",
     description: "Perform immediate recalibration of all temperature sensors in Manufacturing Suite 2. Verify against NIST-traceable standards.",
+    ai_recommended: true,
+    ai_suggestion: "Perform immediate recalibration of all temperature sensors in affected manufacturing suite. Verify against NIST-traceable standards.",
+    ai_effectiveness_note: "Immediate recalibration resolved similar issues in 92% of prior cases.",
   },
   {
     capa_id: "CAPA-2025-005",
@@ -69,6 +80,9 @@ export const capas: CAPA[] = [
     completion_date: "2025-08-25",
     effectiveness_check_status: "Completed",
     description: "Update preventive maintenance schedule to reduce calibration interval from quarterly to monthly for all critical process sensors in Manufacturing.",
+    ai_recommended: true,
+    ai_suggestion: "Update preventive maintenance schedule to reduce calibration interval from quarterly to monthly for critical process sensors.",
+    ai_effectiveness_note: "Interval reduction prevented recurrence in 88% of comparable equipment cases.",
   },
   {
     capa_id: "CAPA-2025-006",
@@ -80,6 +94,7 @@ export const capas: CAPA[] = [
     completion_date: "2025-09-10",
     effectiveness_check_status: "Completed",
     description: "Recalibrate all QC laboratory analytical instruments. Replace aging sensors in HPLC system. Verify performance with reference standards.",
+    ai_recommended: false,
   },
   {
     capa_id: "CAPA-2025-007",
@@ -91,6 +106,9 @@ export const capas: CAPA[] = [
     completion_date: "2025-09-20",
     effectiveness_check_status: "Completed",
     description: "Inspect and service HVAC system in Manufacturing Suite 1. Verify temperature and humidity controls are within specification. Conduct environmental monitoring for 7 days post-service.",
+    ai_recommended: true,
+    ai_suggestion: "Inspect and service HVAC system in affected manufacturing suite. Verify temperature and humidity controls within specification.",
+    ai_effectiveness_note: "HVAC service resolved environmental excursions in 95% of prior events.",
   },
   {
     capa_id: "CAPA-2025-008",
@@ -102,6 +120,9 @@ export const capas: CAPA[] = [
     completion_date: "2025-09-20",
     effectiveness_check_status: "Completed",
     description: "Install continuous environmental monitoring system with automated alerts. Set alarm thresholds at 90% of specification limits for all critical areas.",
+    ai_recommended: true,
+    ai_suggestion: "Install continuous environmental monitoring with automated alerts. Set alarm thresholds at 90% of specification limits.",
+    ai_effectiveness_note: "Automated monitoring prevented similar excursions in 3 of 3 comparable facilities.",
   },
   {
     capa_id: "CAPA-2025-009",
@@ -113,6 +134,7 @@ export const capas: CAPA[] = [
     completion_date: "2025-09-15",
     effectiveness_check_status: "Completed",
     description: "Implement electronic batch record review system with mandatory field completeness checks before record can be submitted for QA review.",
+    ai_recommended: false,
   },
   {
     capa_id: "CAPA-2025-010",
@@ -124,6 +146,9 @@ export const capas: CAPA[] = [
     completion_date: "2025-10-01",
     effectiveness_check_status: "Completed",
     description: "Issue formal non-conformance notification to supplier. Implement enhanced incoming quality testing protocol including additional identity and purity testing for all incoming materials from this supplier.",
+    ai_recommended: true,
+    ai_suggestion: "Issue formal supplier non-conformance notification. Implement enhanced incoming quality testing protocol for all materials from this supplier.",
+    ai_effectiveness_note: "Enhanced incoming testing detected subsequent non-conformances before use in all 4 prior cases.",
   },
   {
     capa_id: "CAPA-2025-011",
@@ -135,6 +160,7 @@ export const capas: CAPA[] = [
     completion_date: "2025-10-20",
     effectiveness_check_status: "Completed",
     description: "Perform comprehensive calibration audit of all manufacturing process instruments. Replace 3 sensors showing calibration drift exceeding 5% from specification.",
+    ai_recommended: false,
   },
   {
     capa_id: "CAPA-2025-012",
@@ -146,6 +172,9 @@ export const capas: CAPA[] = [
     completion_date: "2025-11-05",
     effectiveness_check_status: "Completed",
     description: "Review and tighten critical process parameter control limits for mRNA-145 fill step. Implement automated process control alerts at 80% of specification limits. Conduct operator requalification.",
+    ai_recommended: true,
+    ai_suggestion: "Review and tighten in-process control limits. Implement automated alert at 80% of specification limit to enable early intervention.",
+    ai_effectiveness_note: "Tightened controls with automated alerting reduced out-of-spec incidents by 65%.",
   },
   {
     capa_id: "CAPA-2025-013",
@@ -157,6 +186,7 @@ export const capas: CAPA[] = [
     completion_date: "2025-11-15",
     effectiveness_check_status: "Completed",
     description: "Overhaul HVAC control system in Utilities area. Replace failed temperature control valve. Perform complete environmental qualification post-repair.",
+    ai_recommended: false,
   },
   {
     capa_id: "CAPA-2025-014",
@@ -168,6 +198,7 @@ export const capas: CAPA[] = [
     completion_date: "2025-11-25",
     effectiveness_check_status: "Completed",
     description: "Replace failed calibration reference module in QC spectrophotometer. Perform full system qualification per IQ/OQ/PQ protocol.",
+    ai_recommended: false,
   },
   {
     capa_id: "CAPA-2025-015",
@@ -179,6 +210,9 @@ export const capas: CAPA[] = [
     completion_date: "2025-12-01",
     effectiveness_check_status: "Completed",
     description: "Conduct targeted retraining for all manufacturing operators on critical process parameter monitoring and escalation procedures. Add process parameter trending to daily manufacturing review.",
+    ai_recommended: true,
+    ai_suggestion: "Conduct targeted retraining session for affected operators on current SOP revision. Document with sign-off.",
+    ai_effectiveness_note: "Targeted retraining has 87% effectiveness rate in eliminating procedure gaps.",
   },
   {
     capa_id: "CAPA-2025-016",
@@ -190,6 +224,9 @@ export const capas: CAPA[] = [
     completion_date: "2025-12-05",
     effectiveness_check_status: "Completed",
     description: "Conduct targeted retraining session for all packaging line operators on current SOP revision. Implement competency assessment sign-off requirement.",
+    ai_recommended: true,
+    ai_suggestion: "Conduct targeted retraining session for affected operators on current SOP revision. Document with sign-off.",
+    ai_effectiveness_note: "Targeted retraining has 87% effectiveness rate in eliminating procedure gaps.",
   },
   {
     capa_id: "CAPA-2025-017",
@@ -201,6 +238,7 @@ export const capas: CAPA[] = [
     completion_date: "2025-12-22",
     effectiveness_check_status: "Completed",
     description: "Issue formal supplier corrective action request. Establish enhanced incoming testing protocol. Add supplier to enhanced monitoring program with quarterly audits.",
+    ai_recommended: false,
   },
   {
     capa_id: "CAPA-2025-018",
@@ -212,6 +250,9 @@ export const capas: CAPA[] = [
     completion_date: "2026-01-10",
     effectiveness_check_status: "Completed",
     description: "Complete recalibration of all manufacturing suite process instrumentation. Implement sensor redundancy for critical temperature measurement points.",
+    ai_recommended: true,
+    ai_suggestion: "Perform immediate recalibration of all temperature sensors in affected manufacturing suite. Verify against NIST-traceable standards.",
+    ai_effectiveness_note: "Immediate recalibration resolved similar issues in 92% of prior cases.",
   },
   {
     capa_id: "CAPA-2025-019",
@@ -223,6 +264,9 @@ export const capas: CAPA[] = [
     completion_date: "2026-01-10",
     effectiveness_check_status: "Completed",
     description: "Deploy real-time calibration drift monitoring system with automated alerts. Integrate with site SCADA system for continuous process control visibility.",
+    ai_recommended: true,
+    ai_suggestion: "Update preventive maintenance schedule to reduce calibration interval from quarterly to monthly for critical process sensors.",
+    ai_effectiveness_note: "Interval reduction prevented recurrence in 88% of comparable equipment cases.",
   },
   {
     capa_id: "CAPA-2025-020",
@@ -234,6 +278,7 @@ export const capas: CAPA[] = [
     completion_date: "2026-01-03",
     effectiveness_check_status: "Completed",
     description: "Repair environmental control system failure in Utilities area. Replace faulty damper actuators. Verify environmental control within specification across all affected rooms.",
+    ai_recommended: false,
   },
   {
     capa_id: "CAPA-2025-021",
@@ -245,6 +290,9 @@ export const capas: CAPA[] = [
     completion_date: "2026-01-18",
     effectiveness_check_status: "Completed",
     description: "Implement tightened in-process control strategy for mRNA-101 downstream process steps. Install additional process monitoring with automated out-of-trend alerts.",
+    ai_recommended: true,
+    ai_suggestion: "Review and tighten in-process control limits. Implement automated alert at 80% of specification limit to enable early intervention.",
+    ai_effectiveness_note: "Tightened controls with automated alerting reduced out-of-spec incidents by 65%.",
   },
   {
     capa_id: "CAPA-2025-022",
@@ -256,6 +304,7 @@ export const capas: CAPA[] = [
     completion_date: "2026-01-25",
     effectiveness_check_status: "Completed",
     description: "Replace failing temperature transmitter on Manufacturing bioreactor. Perform calibration qualification and process performance verification.",
+    ai_recommended: false,
   },
   {
     capa_id: "CAPA-2025-023",
@@ -267,6 +316,7 @@ export const capas: CAPA[] = [
     completion_date: "2026-02-15",
     effectiveness_check_status: "Completed",
     description: "Replace failed calibration standard module in QC HPLC system. Perform full instrument qualification prior to returning to service.",
+    ai_recommended: false,
   },
   {
     capa_id: "CAPA-2025-024",
@@ -278,6 +328,9 @@ export const capas: CAPA[] = [
     completion_date: "2026-02-22",
     effectiveness_check_status: "Completed",
     description: "Deploy electronic batch record system upgrade with mandatory completeness validation. Implement automated alerts for incomplete documentation fields.",
+    ai_recommended: true,
+    ai_suggestion: "Implement mandatory dual-signature checklist for all batch record completions during shift handoffs.",
+    ai_effectiveness_note: "Similar corrective actions achieved 90% recurrence reduction in prior batches.",
   },
   {
     capa_id: "CAPA-2025-025",
@@ -289,6 +342,7 @@ export const capas: CAPA[] = [
     completion_date: "2026-03-05",
     effectiveness_check_status: "Completed",
     description: "Conduct full packaging operator requalification program. Implement visual aids and updated job aids at all packaging stations.",
+    ai_recommended: false,
   },
   {
     capa_id: "CAPA-2026-001",
@@ -300,6 +354,9 @@ export const capas: CAPA[] = [
     completion_date: null,
     effectiveness_check_status: "In Progress",
     description: "Perform comprehensive recalibration and preventive maintenance on all bioreactor process instruments in Manufacturing Suite 1. Target completion within 14 days.",
+    ai_recommended: true,
+    ai_suggestion: "Perform immediate recalibration of all temperature sensors in affected manufacturing suite. Verify against NIST-traceable standards.",
+    ai_effectiveness_note: "Immediate recalibration resolved similar issues in 92% of prior cases.",
   },
   {
     capa_id: "CAPA-2026-002",
@@ -311,6 +368,9 @@ export const capas: CAPA[] = [
     completion_date: null,
     effectiveness_check_status: "In Progress",
     description: "Design and implement real-time equipment health monitoring dashboard for all critical manufacturing instruments. Integrate with preventive maintenance scheduling system.",
+    ai_recommended: true,
+    ai_suggestion: "Update preventive maintenance schedule to reduce calibration interval from quarterly to monthly for critical process sensors.",
+    ai_effectiveness_note: "Interval reduction prevented recurrence in 88% of comparable equipment cases.",
   },
   {
     capa_id: "CAPA-2026-003",
@@ -322,6 +382,9 @@ export const capas: CAPA[] = [
     completion_date: null,
     effectiveness_check_status: "In Progress",
     description: "Implement mandatory electronic document review checklist for all QC batch records. Require dual-analyst review for all critical test results.",
+    ai_recommended: true,
+    ai_suggestion: "Implement mandatory dual-signature checklist for all batch record completions during shift handoffs.",
+    ai_effectiveness_note: "Similar corrective actions achieved 90% recurrence reduction in prior batches.",
   },
   {
     capa_id: "CAPA-2026-004",
@@ -333,6 +396,9 @@ export const capas: CAPA[] = [
     completion_date: null,
     effectiveness_check_status: "In Progress",
     description: "Tighten process parameter control strategy for mRNA-123 fill and finish step. Implement statistical process control charting with automatic alerts at 1.5-sigma deviation from mean.",
+    ai_recommended: true,
+    ai_suggestion: "Review and tighten in-process control limits. Implement automated alert at 80% of specification limit to enable early intervention.",
+    ai_effectiveness_note: "Tightened controls with automated alerting reduced out-of-spec incidents by 65%.",
   },
   {
     capa_id: "CAPA-2026-005",
@@ -344,6 +410,7 @@ export const capas: CAPA[] = [
     completion_date: null,
     effectiveness_check_status: "Pending",
     description: "Conduct full HVAC system qualification in Manufacturing Suite 2. Replace aging air handling unit components. Perform continuous environmental monitoring for 14 days.",
+    ai_recommended: false,
   },
   {
     capa_id: "CAPA-2026-006",
@@ -355,6 +422,9 @@ export const capas: CAPA[] = [
     completion_date: null,
     effectiveness_check_status: "Pending",
     description: "Issue supplier corrective action request. Conduct supplier audit within 30 days. Implement enhanced incoming inspection protocol including additional identity testing.",
+    ai_recommended: true,
+    ai_suggestion: "Issue formal supplier non-conformance notification. Implement enhanced incoming quality testing protocol for all materials from this supplier.",
+    ai_effectiveness_note: "Enhanced incoming testing detected subsequent non-conformances before use in all 4 prior cases.",
   },
   {
     capa_id: "CAPA-2026-007",
@@ -366,6 +436,7 @@ export const capas: CAPA[] = [
     completion_date: null,
     effectiveness_check_status: "Pending",
     description: "Inspect and repair environmental control systems in Utility area. Restore environmental conditions to specification. Perform post-repair qualification monitoring.",
+    ai_recommended: false,
   },
   {
     capa_id: "CAPA-2026-008",
@@ -377,6 +448,7 @@ export const capas: CAPA[] = [
     completion_date: null,
     effectiveness_check_status: "Pending",
     description: "Emergency recalibration and qualification of all Manufacturing Suite 1 critical process instruments. Deploy temporary backup measurement systems during qualification period.",
+    ai_recommended: false,
   },
   {
     capa_id: "CAPA-2026-009",
@@ -388,6 +460,9 @@ export const capas: CAPA[] = [
     completion_date: null,
     effectiveness_check_status: "Pending",
     description: "Implement automated calibration drift detection system with escalation to Engineering and QA when instrument performance trends outside statistical control limits.",
+    ai_recommended: true,
+    ai_suggestion: "Update preventive maintenance schedule to reduce calibration interval from quarterly to monthly for critical process sensors.",
+    ai_effectiveness_note: "Interval reduction prevented recurrence in 88% of comparable equipment cases.",
   },
   {
     capa_id: "CAPA-2026-010",
@@ -399,5 +474,8 @@ export const capas: CAPA[] = [
     completion_date: null,
     effectiveness_check_status: "Pending",
     description: "Review and update mRNA-145 process parameter specifications and in-process controls. Conduct immediate operator requalification for all affected process steps.",
+    ai_recommended: true,
+    ai_suggestion: "Review and tighten in-process control limits. Implement automated alert at 80% of specification limit to enable early intervention.",
+    ai_effectiveness_note: "Tightened controls with automated alerting reduced out-of-spec incidents by 65%.",
   },
 ];

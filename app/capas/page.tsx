@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { AlertTriangle, Clock, CheckCircle, TrendingUp } from "lucide-react";
+import { AlertTriangle, CheckCircle, Sparkles } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import Badge from "@/components/Badge";
 import KPICard from "@/components/KPICard";
@@ -40,6 +40,7 @@ export default function CAPATrackerPage() {
   const [filterOwner, setFilterOwner] = useState<string>(ALL);
   const [filterType, setFilterType] = useState<string>(ALL);
   const [filterStatus, setFilterStatus] = useState<string>(ALL);
+  const [filterAI, setFilterAI] = useState<boolean>(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const owners: (CAPAOwner | "All")[] = [ALL, "Engineering", "Manufacturing Lead", "QA Manager", "Quality Systems"];
@@ -63,6 +64,7 @@ export default function CAPATrackerPage() {
     const completed = capas.filter(c => c.effectiveness_check_status === "Completed").length;
     return Math.round((completed / capas.length) * 100);
   }, []);
+  const aiAssistedCount = useMemo(() => capas.filter(c => c.ai_recommended).length, []);
 
   // Chart data
   const statusData = useMemo(() => {
@@ -99,9 +101,10 @@ export default function CAPATrackerPage() {
       if (filterOwner !== ALL && c.owner !== filterOwner) return false;
       if (filterType !== ALL && c.action_type !== filterType) return false;
       if (filterStatus !== ALL && c.effectiveness_check_status !== filterStatus) return false;
+      if (filterAI && !c.ai_recommended) return false;
       return true;
     });
-  }, [filterOwner, filterType, filterStatus]);
+  }, [filterOwner, filterType, filterStatus, filterAI]);
 
   return (
     <div className="space-y-5">
@@ -117,7 +120,7 @@ export default function CAPATrackerPage() {
         <KPICard label="Overdue CAPAs" value={overdue} color={overdue > 0 ? "red" : "green"} subtext={overdue > 0 ? "Require immediate attention" : "None overdue"} />
         <KPICard label="Due This Week" value={dueThisWeek} color={dueThisWeek > 2 ? "amber" : "default"} />
         <KPICard label="Avg Days to Close" value={`${avgDaysToClose}d`} subtext="From creation to completion" />
-        <KPICard label="Effectiveness Rate" value={`${effectivenessRate}%`} color={effectivenessRate >= 75 ? "green" : "amber"} subtext="CAPAs with completed verification" />
+        <KPICard label="AI-Assisted CAPAs" value={`${aiAssistedCount} / ${capas.length}`} color="blue" subtext="Created using AI recommendations" />
       </div>
 
       {/* Charts Row */}
@@ -163,8 +166,19 @@ export default function CAPATrackerPage() {
               ))}
             </select>
           ))}
-          <div className="flex items-center text-sm text-gray-500">
-            {filtered.length} of {capas.length} records
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setFilterAI(!filterAI)}
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-md border transition-colors ${
+                filterAI
+                  ? "bg-blue-50 border-blue-300 text-blue-700 font-medium"
+                  : "border-gray-300 text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              AI-Assisted
+            </button>
+            <span className="text-sm text-gray-500">{filtered.length} of {capas.length}</span>
           </div>
         </div>
       </div>
@@ -183,6 +197,7 @@ export default function CAPATrackerPage() {
                 <th className="px-4 py-3 font-medium">Created</th>
                 <th className="px-4 py-3 font-medium">Due Date</th>
                 <th className="px-4 py-3 font-medium">Days Left</th>
+                <th className="px-4 py-3 font-medium">AI</th>
                 <th className="px-4 py-3 font-medium">Status</th>
               </tr>
             </thead>
@@ -226,20 +241,42 @@ export default function CAPATrackerPage() {
                           <span className={dueSOon ? "text-amber-600" : "text-gray-500"}>{daysLeft}d</span>
                         )}
                       </td>
+                      <td className="px-4 py-2.5 text-center">
+                        {c.ai_recommended ? (
+                          <span title="Created using AI recommendation">
+                            <Sparkles className="w-3.5 h-3.5 text-blue-500 inline" />
+                          </span>
+                        ) : (
+                          <span className="text-gray-300 text-xs">—</span>
+                        )}
+                      </td>
                       <td className="px-4 py-2.5">
                         <Badge value={c.effectiveness_check_status} />
                       </td>
                     </tr>
                     {expandedId === c.capa_id && (
                       <tr key={`${c.capa_id}-expanded`} className="border-t border-gray-100 bg-blue-50">
-                        <td colSpan={9} className="px-6 py-3">
-                          <div className="text-sm space-y-1.5">
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Action Description</p>
-                            <p className="text-gray-800">{c.description}</p>
+                        <td colSpan={10} className="px-6 py-3">
+                          <div className="text-sm space-y-2">
+                            <div>
+                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Action Description</p>
+                              <p className="text-gray-800">{c.description}</p>
+                            </div>
                             {dev && (
-                              <p className="text-xs text-gray-500 mt-1">
+                              <p className="text-xs text-gray-500">
                                 Linked to <span className="font-medium">{dev.deviation_id}</span> · {dev.process_area} · {dev.product_id} · Root cause: <span className="font-medium">{dev.root_cause_category}</span>
                               </p>
+                            )}
+                            {c.ai_recommended && c.ai_suggestion && (
+                              <div className="bg-blue-100 border border-blue-200 rounded-md px-3 py-2 mt-1">
+                                <p className="text-xs font-semibold text-blue-700 flex items-center gap-1 mb-1">
+                                  <Sparkles className="w-3 h-3" /> AI Recommendation
+                                </p>
+                                <p className="text-xs text-blue-900 leading-relaxed">{c.ai_suggestion}</p>
+                                {c.ai_effectiveness_note && (
+                                  <p className="text-xs text-blue-600 mt-1 italic">{c.ai_effectiveness_note}</p>
+                                )}
+                              </div>
                             )}
                             {c.completion_date && (
                               <p className="text-xs text-green-700">
