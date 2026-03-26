@@ -314,7 +314,7 @@ export default function PeopleOrgPage() {
         <Row
           left={
             <Anchor
-              tag="Row 1 — Tasks"
+              tag="Tasks"
               question="Which deviation management tasks do we automate, augment, or keep human?"
             />
           }
@@ -340,7 +340,7 @@ export default function PeopleOrgPage() {
         <Row
           left={
             <Anchor
-              tag="Row 2 — Talent"
+              tag="Talent"
               question="What skills and roles do we need — and in what quantity?"
             />
           }
@@ -389,7 +389,7 @@ export default function PeopleOrgPage() {
         <Row
           left={
             <Anchor
-              tag="Row 3 — Teams"
+              tag="Teams"
               question="How do teams need to restructure to deliver the reimagined workflow?"
             />
           }
