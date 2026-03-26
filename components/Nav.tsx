@@ -8,7 +8,7 @@ const links = [
   { href: "/process-map", label: "Process Mining", icon: Network },
   { href: "/deviations", label: "Deviations", icon: FileText },
   { href: "/capas", label: "CAPA Tracker", icon: ClipboardList },
-  { href: "/simulation", label: "Digital Twin", icon: GitBranch },
+  { href: "/simulation", label: "Digital Twin Simulator", icon: GitBranch },
   { href: "/people-org", label: "People & Org", icon: Users },
   { href: "/enterprise-explainer", label: "About This Demo", icon: BookOpen },
 ];
