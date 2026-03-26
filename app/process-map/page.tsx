@@ -92,7 +92,7 @@ function ProcessGraph({ selectedVariant }: { selectedVariant: number | null }) {
               stroke="#3b82f6" strokeWidth={thick} opacity={opacity}
             />
             <text x={CENTER_X + NODE_W / 2 + 8} y={(e.y1 + e.y2) / 2 + 4} fontSize={9} fill="#6b7280">
-              {e.count} cases
+              {e.count} deviations
             </text>
           </g>
         );
@@ -114,7 +114,7 @@ function ProcessGraph({ selectedVariant }: { selectedVariant: number | null }) {
           <text x={REWORK_X - 1} y={421} fontSize={9} fill="#991b1b" fontWeight="600">
             ↺ Re-investigation
           </text>
-          <text x={REWORK_X + 7} y={433} fontSize={8} fill="#dc2626">{reworkCount} cases</text>
+          <text x={REWORK_X + 7} y={433} fontSize={8} fill="#dc2626">{reworkCount} deviations</text>
         </g>
       )}
 
@@ -129,7 +129,7 @@ function ProcessGraph({ selectedVariant }: { selectedVariant: number | null }) {
           />
           <rect x={REWORK_X - 5} y={505} width={80} height={26} rx={4} fill="#dbeafe" />
           <text x={REWORK_X - 1} y={517} fontSize={8} fill="#1e40af" fontWeight="600">Skip CAPA</text>
-          <text x={REWORK_X - 1} y={528} fontSize={8} fill="#1e40af">{noCapaCount} cases (no CAPA req.)</text>
+          <text x={REWORK_X - 1} y={528} fontSize={8} fill="#1e40af">{noCapaCount} deviations (no CAPA req.)</text>
         </g>
       )}
 
@@ -175,7 +175,7 @@ function ProcessGraph({ selectedVariant }: { selectedVariant: number | null }) {
             </text>
             {metric && (
               <text x={CENTER_X + 12} y={step.y + 30} fontSize={9} fill="#9ca3af">
-                {metric.case_count} cases · avg {metric.avg_dwell_days}d
+                {metric.case_count} deviations · avg {metric.avg_dwell_days}d
                 {hasViolation ? ` · ⚠ ${metric.violation_count} violations` : ""}
               </text>
             )}
@@ -267,7 +267,7 @@ export default function ProcessMapPage() {
       {/* KPI Strip */}
       <div className="grid grid-cols-5 gap-3">
         {[
-          { label: "Cases Analyzed", value: PROCESS_CASES.length, sub: "deviations mined", color: "text-gray-900" },
+          { label: "Deviations Analyzed", value: PROCESS_CASES.length, sub: "deviations mined", color: "text-gray-900" },
           { label: "Test Right First Time %", value: "99%", sub: "target: 99.9%", color: "text-green-700" },
           { label: "Path with CAPA", value: "15%", sub: "formal CAPA required", color: "text-amber-700" },
           { label: "% Approved within 30d", value: `${Math.round((PROCESS_CASES.filter(c => c.total_cycle_days <= 30).length / PROCESS_CASES.length) * 100)}%`, sub: "closed within 30 days", color: "text-gray-900" },
@@ -328,7 +328,7 @@ export default function ProcessMapPage() {
                     <p className="text-xs text-gray-400 mt-0.5 truncate">{v.description}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-bold text-gray-900">{v.case_count} <span className="text-xs font-normal text-gray-400">cases</span></p>
+                    <p className="text-sm font-bold text-gray-900">{v.case_count} <span className="text-xs font-normal text-gray-400">deviations</span></p>
                     <p className="text-xs text-gray-400">{v.pct}% · avg {v.avg_cycle_days}d</p>
                   </div>
                   <div className="w-16 shrink-0">
@@ -384,7 +384,7 @@ export default function ProcessMapPage() {
                       </div>
                       <p className="text-xs text-gray-500 mt-0.5 truncate">{ineff.detail}</p>
                     </div>
-                    <span className="text-xs text-gray-400 shrink-0 mr-1">{ineff.case_count} cases</span>
+                    <span className="text-xs text-gray-400 shrink-0 mr-1">{ineff.case_count} deviations</span>
                     {expandedIneff === ineff.id ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />}
                   </button>
                   {expandedIneff === ineff.id && (
