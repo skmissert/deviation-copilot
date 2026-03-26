@@ -223,12 +223,12 @@ export default function ProcessMapPage() {
   const reworkRate    = Math.round((PROCESS_CASES.filter(c => c.has_rework).length / PROCESS_CASES.length) * 100);
 
   const STEP_LABEL_MAP: Record<string, string> = {
-    DEV_REPORTED:           "Detection to Reporting",
-    TRIAGE_COMPLETE:        "Classification",
-    INVESTIGATION_STARTED:  "Investigation",
-    CAPA_CREATED:           "CAPA Determination",
-    CAPA_IMPLEMENTED:       "CAPA Implementation",
-    QA_REVIEW:              "QA Review & Approval",
+    DEV_REPORTED:              "Detection to Reporting",
+    TRIAGE_COMPLETE:           "Classification",
+    INVESTIGATION_STARTED:     "Investigation",
+    INVESTIGATION_COMPLETE:    "CAPA Determination",
+    CAPA_CREATED:              "CAPA Implementation",
+    QA_REVIEW:                 "QA Review & Approval",
   };
 
   const stepBarData = useMemo(() =>
