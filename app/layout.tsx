@@ -6,7 +6,7 @@ import Nav from "@/components/Nav";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "QualityAI Copilot — Deviation Investigation",
+  title: "QualityAI — Deviation Investigation",
   description: "AI-assisted deviation investigation and CAPA management for biopharma manufacturing",
 };
 

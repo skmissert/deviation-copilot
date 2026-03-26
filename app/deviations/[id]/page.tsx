@@ -439,7 +439,7 @@ export default function InvestigationWorkspacePage() {
           <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
             <div className="bg-blue-600 px-4 py-2.5 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-white" />
-              <span className="text-white text-sm font-semibold">AI Copilot</span>
+              <span className="text-white text-sm font-semibold">AI Assistant</span>
               <span className="ml-auto text-blue-200 text-xs">Powered by Claude</span>
             </div>
 

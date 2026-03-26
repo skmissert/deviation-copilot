@@ -169,7 +169,7 @@ export default function SimulationPage() {
   // Build narrative
   const narrative = result ? (() => {
     const parts: string[] = [];
-    if (copilotAdoption > 0) parts.push(`AI Copilot at ${copilotAdoption}% adoption reduces investigation time from ${BASELINE_RESULT.avg_investigation_days}d to ${result.avg_investigation_days}d`);
+    if (copilotAdoption > 0) parts.push(`AI Assistant at ${copilotAdoption}% adoption reduces investigation time from ${BASELINE_RESULT.avg_investigation_days}d to ${result.avg_investigation_days}d`);
     if (capaAdoption > 0) parts.push(`AI CAPA recommendations at ${capaAdoption}% adoption reduce CAPA cycle time from ${BASELINE_RESULT.avg_capa_days}d to ${result.avg_capa_days}d`);
     if (aiTriage) parts.push(`AI intake triage reduces queue overhead and investigator context-switching`);
     const combined = parts.join(". ");
@@ -197,7 +197,7 @@ export default function SimulationPage() {
         <LeverCard
           icon={Sparkles}
           iconBg="bg-blue-600"
-          title="AI Copilot — Investigation Workflow"
+          title="AI Assistant — Investigation Workflow"
           subtitle="Root Cause Analysis + Summary Drafting"
           description="Investigators use AI-suggested root causes, evidence summaries, and draft investigation reports. Each step requires human review and sign-off. Adoption rate reflects what % of the investigator team is actively using these features."
           appLink="/deviations"
@@ -291,7 +291,7 @@ export default function SimulationPage() {
             <p className="text-sm text-blue-800 leading-relaxed">{narrative}</p>
             <div className="flex gap-3 mt-3">
               <Link href="/deviations" className="text-xs text-blue-700 hover:underline flex items-center gap-1">
-                See AI Copilot in Deviations <ArrowRight className="w-3 h-3" />
+                See AI Assistant in Deviations <ArrowRight className="w-3 h-3" />
               </Link>
               <Link href="/capas" className="text-xs text-blue-700 hover:underline flex items-center gap-1">
                 See AI CAPA Recommendations <ArrowRight className="w-3 h-3" />

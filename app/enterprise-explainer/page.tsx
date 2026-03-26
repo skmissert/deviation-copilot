@@ -18,7 +18,7 @@ const DEMO_VS_REAL = [
   },
   {
     aspect: "AI recommendations",
-    demo: "Rule-based lookup tables keyed by root cause category. The AI Copilot output is deterministic and pre-scripted to demonstrate the interaction pattern.",
+    demo: "Rule-based lookup tables keyed by root cause category. The AI Assistant output is deterministic and pre-scripted to demonstrate the interaction pattern.",
     real: "LLM-based reasoning over the actual deviation record, evidence package, and historical case database. Recommendations adapt to the specific deviation context, not a generic template.",
   },
   {
@@ -145,7 +145,7 @@ export default function EnterpriseExplainerPage() {
               icon: Cpu,
               color: "bg-green-600",
               title: "Connect AI reasoning",
-              detail: "The AI Copilot is pointed at your live deviation records and historical case database. Root cause suggestions, CAPA recommendations, and risk flags are generated from your actual data, not lookup tables.",
+              detail: "The AI Assistant is pointed at your live deviation records and historical case database. Root cause suggestions, CAPA recommendations, and risk flags are generated from your actual data, not lookup tables.",
             },
           ].map(s => (
             <div key={s.step} className="bg-white rounded-xl border border-gray-200 p-4">
