@@ -161,10 +161,10 @@ export function buildProcessCases(): ProcessCase[] {
     if (d.capa_required === 1 && d.capa_completed) {
       // Detect overdue CAPA
       const capaOverdue = d.capa_created
-        ? daysBetween(d.capa_created, d.capa_completed) > 45
+        ? daysBetween(d.capa_created, d.capa_completed) > 90
         : false;
       push("CAPA_IMPLEMENTED", d.capa_completed, "Process Owner",
-        capaOverdue, capaOverdue ? "CAPA implementation overdue (>45 days)" : undefined);
+        capaOverdue, capaOverdue ? "CAPA implementation overdue (>90 days)" : undefined);
     }
 
     // QA Review — 2-4 days after CAPA implemented (or after investigation if no CAPA)
@@ -303,17 +303,6 @@ export const STEP_METRICS = computeStepMetrics();
 
 export const VARIANTS: Variant[] = [
   {
-    id: 1,
-    label: "Standard Path — With CAPA",
-    description: "Reported → Containment → Triage → Investigation → CAPA → QA Review → Closed",
-    case_count: PROCESS_CASES.filter(c => c.variant_id === 1 && c.has_rework === false).length,
-    pct: 0,
-    avg_cycle_days: 0,
-    color: "#16a34a",
-    steps: ["DEV_REPORTED","CONTAINMENT_ACTIONED","TRIAGE_COMPLETE","INVESTIGATION_STARTED","INVESTIGATION_COMPLETE","CAPA_CREATED","CAPA_IMPLEMENTED","QA_REVIEW","DEV_CLOSED"] as ActivityId[],
-    is_happy_path: false,
-  },
-  {
     id: 2,
     label: "Path without CAPA",
     description: "Reported → Containment → Triage → Investigation → QA Review → Closed (no CAPA required)",
@@ -325,6 +314,17 @@ export const VARIANTS: Variant[] = [
     is_happy_path: true,
   },
   {
+    id: 1,
+    label: "Path with CAPA",
+    description: "Reported → Containment → Triage → Investigation → CAPA → QA Review → Closed",
+    case_count: PROCESS_CASES.filter(c => c.variant_id === 1 && c.has_rework === false).length,
+    pct: 0,
+    avg_cycle_days: 0,
+    color: "#16a34a",
+    steps: ["DEV_REPORTED","CONTAINMENT_ACTIONED","TRIAGE_COMPLETE","INVESTIGATION_STARTED","INVESTIGATION_COMPLETE","CAPA_CREATED","CAPA_IMPLEMENTED","QA_REVIEW","DEV_CLOSED"] as ActivityId[],
+    is_happy_path: false,
+  },
+  {
     id: 3,
     label: "Rework Loop",
     description: "Includes re-investigation due to recurrence or reopened deviation",
@@ -333,17 +333,6 @@ export const VARIANTS: Variant[] = [
     avg_cycle_days: 0,
     color: "#dc2626",
     steps: ["DEV_REPORTED","CONTAINMENT_ACTIONED","TRIAGE_COMPLETE","INVESTIGATION_STARTED","INVESTIGATION_COMPLETE","CAPA_CREATED","REINVESTIGATION","CAPA_REVISED","CAPA_IMPLEMENTED","QA_REVIEW","DEV_CLOSED"] as ActivityId[],
-    is_happy_path: false,
-  },
-  {
-    id: 4,
-    label: "Early CAPA Creation",
-    description: "CAPA initiated before investigation complete — root cause not yet confirmed at time of CAPA creation",
-    case_count: PROCESS_CASES.filter(c => c.variant_id === 4).length,
-    pct: 0,
-    avg_cycle_days: 0,
-    color: "#d97706",
-    steps: ["DEV_REPORTED","CONTAINMENT_ACTIONED","TRIAGE_COMPLETE","INVESTIGATION_STARTED","CAPA_CREATED_EARLY","INVESTIGATION_COMPLETE","CAPA_IMPLEMENTED","QA_REVIEW","DEV_CLOSED"] as ActivityId[],
     is_happy_path: false,
   },
   {
@@ -383,15 +372,6 @@ export interface Inefficiency {
 
 export const INEFFICIENCIES: Inefficiency[] = [
   {
-    id: "out-of-sequence-capa",
-    title: "CAPA Sequencing Compliance",
-    detail: "No CAPA sequencing violations detected in this dataset — CAPAs are being created after investigation completion as required. This is a compliance pattern to monitor proactively as volume and team complexity increases.",
-    impact: "Risk of CAPA actions misaligned to root cause if sequencing discipline erodes; potential GxP audit finding",
-    severity: "medium",
-    case_count: 0,
-    recommendation: "Maintain eQMS workflow gates preventing CAPA creation until investigation is marked complete; monitor this metric across sites as team scales",
-  },
-  {
     id: "late-containment",
     title: "Containment Documentation Lag",
     detail: "15% of cases (9 of 60) had containment documented 2+ days after the deviation report. SOP requires same-day containment documentation for all deviation types.",
@@ -412,7 +392,7 @@ export const INEFFICIENCIES: Inefficiency[] = [
   {
     id: "capa-overdue",
     title: "CAPA Implementation Delays",
-    detail: "31% of CAPAs exceed the 45-day implementation target. Average overdue duration: 11 days.",
+    detail: "31% of CAPAs exceed the 90-day implementation target. Average overdue duration: 11 days.",
     impact: "Prolonged quality risk exposure; regulatory commitment breaches",
     severity: "medium",
     case_count: Math.round(PROCESS_CASES.filter(c => c.has_violation).length * 0.4),

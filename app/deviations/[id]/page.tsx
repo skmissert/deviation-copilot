@@ -91,7 +91,7 @@ export default function InvestigationWorkspacePage() {
   // Root cause state
   const [rcLoading, setRcLoading] = useState(false);
   const [rcResult, setRcResult] = useState<RootCauseResult | null>(null);
-  const [selectedCause, setSelectedCause] = useState<RootCauseCandidate | null>(null);
+  const [selectedCauses, setSelectedCauses] = useState<Set<number>>(new Set());
   const [rcConfirmed, setRcConfirmed] = useState(false);
 
   // CAPA state
@@ -115,11 +115,15 @@ export default function InvestigationWorkspacePage() {
   const [newCAPADays, setNewCAPADays] = useState(30);
   const [customCAPAs, setCustomCAPAs] = useState<CAPARecommendation[]>([]);
 
+  // CAPA no-action state
+  const [noCAPANeeded, setNoCAPANeeded] = useState(false);
+
   // Summary state
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryDraft, setSummaryDraft] = useState<SummaryDraft | null>(null);
   const [summaryNotes, setSummaryNotes] = useState("");
   const [summaryConfirmed, setSummaryConfirmed] = useState(false);
+  const [editedSummarySections, setEditedSummarySections] = useState<Record<string, string>>({});
 
   // Audit log
   const [auditLog, setAuditLog] = useState<{ ts: string; message: string }[]>([]);
@@ -158,21 +162,24 @@ export default function InvestigationWorkspacePage() {
     setRcLoading(true);
     const result = await runRootCauseAgent(deviation, deviations);
     setRcResult(result);
-    setSelectedCause(result.candidates[0]);
+    setSelectedCauses(new Set([0]));
     setRcLoading(false);
   };
 
   const handleConfirmRootCause = () => {
-    if (!selectedCause) return;
+    if (selectedCauses.size === 0) return;
     setRcConfirmed(true);
     setCurrentStep("capa");
-    addAudit(`INV confirmed root cause: ${selectedCause.cause} (${selectedCause.confidence} confidence)`);
+    const causeNames = Array.from(selectedCauses).map(i => rcResult?.candidates[i]?.cause).filter(Boolean).join(", ");
+    addAudit(`INV confirmed root cause(s): ${causeNames} (${selectedCauses.size} cause(s) selected)`);
   };
 
   const handleRunCAPA = async () => {
-    if (!selectedCause) return;
+    if (selectedCauses.size === 0) return;
     setCapaLoading(true);
-    const result = await runCAPAAgent(selectedCause.cause, capas);
+    const primaryIdx = Math.min(...Array.from(selectedCauses));
+    const primaryCause = rcResult!.candidates[primaryIdx];
+    const result = await runCAPAAgent(primaryCause.cause, capas);
     setCapaResult(result);
     setSelectedCAPAs(new Set(result.recommendations.map((_, i) => i)));
     setEditedCAPADescs({});
@@ -210,10 +217,12 @@ export default function InvestigationWorkspacePage() {
   };
 
   const handleRunSummary = async () => {
-    if (!selectedCause || !capaResult) return;
+    if (selectedCauses.size === 0 || (!capaResult && !noCAPANeeded)) return;
     setSummaryLoading(true);
-    const approvedCAPAs = capaResult.recommendations.filter((_, i) => selectedCAPAs.has(i));
-    const draft = await runSummaryAgent(deviation, selectedCause, approvedCAPAs);
+    const primaryIdx = Math.min(...Array.from(selectedCauses));
+    const primaryCause = rcResult!.candidates[primaryIdx];
+    const approvedCAPAs = capaResult ? capaResult.recommendations.filter((_, i) => selectedCAPAs.has(i)) : [];
+    const draft = await runSummaryAgent(deviation, primaryCause, approvedCAPAs);
     setSummaryDraft({ ...draft, investigator_notes: summaryNotes });
     setSummaryLoading(false);
   };
@@ -476,7 +485,6 @@ export default function InvestigationWorkspacePage() {
                     {!intakeConfirmed ? (
                       <div className="flex gap-2">
                         <button onClick={handleConfirmIntake} className="flex-1 py-1.5 text-xs bg-green-600 text-white rounded font-medium hover:bg-green-700">Confirm Classification</button>
-                        <button className="px-3 py-1.5 text-xs border border-gray-300 text-gray-600 rounded hover:bg-gray-50">Override</button>
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5 text-xs text-green-700"><CheckCircle className="w-3.5 h-3.5" /> Confirmed by INV</div>
@@ -503,11 +511,15 @@ export default function InvestigationWorkspacePage() {
                     {rcResult.candidates.map((c, i) => (
                       <div
                         key={i}
-                        onClick={() => !rcConfirmed && editingRationaleIdx !== i && setSelectedCause(c)}
+                        onClick={() => !rcConfirmed && editingRationaleIdx !== i && setSelectedCauses(prev => {
+                          const n = new Set(prev);
+                          n.has(i) ? n.delete(i) : n.add(i);
+                          return n;
+                        })}
                         className={`rounded-md border p-2.5 text-xs cursor-pointer transition-colors ${
-                          selectedCause?.cause === c.cause && !rcConfirmed
+                          selectedCauses.has(i) && !rcConfirmed
                             ? "border-blue-400 bg-blue-50"
-                            : selectedCause?.cause === c.cause && rcConfirmed
+                            : selectedCauses.has(i) && rcConfirmed
                             ? "border-green-400 bg-green-50"
                             : "border-gray-200 hover:border-blue-200"
                         }`}
@@ -587,8 +599,11 @@ export default function InvestigationWorkspacePage() {
                                     similar_count: 0,
                                     rationale: `Custom root cause identified by investigator: ${customCauseText}`,
                                   };
-                                  setSelectedCause(custom);
-                                  setRcResult(prev => prev ? { candidates: [...prev.candidates, custom] } : { candidates: [custom] });
+                                  setRcResult(prev => {
+                                    const updated = prev ? { candidates: [...prev.candidates, custom] } : { candidates: [custom] };
+                                    setSelectedCauses(new Set([updated.candidates.length - 1]));
+                                    return updated;
+                                  });
                                   setShowCustomCause(false);
                                 }}
                                 className="flex-1 py-1 bg-blue-600 text-white rounded font-medium hover:bg-blue-700"
@@ -604,11 +619,11 @@ export default function InvestigationWorkspacePage() {
                       </div>
                     )}
                     {!rcConfirmed ? (
-                      <button onClick={handleConfirmRootCause} disabled={!selectedCause} className="w-full py-1.5 text-xs bg-green-600 text-white rounded font-medium hover:bg-green-700 disabled:opacity-50">
+                      <button onClick={handleConfirmRootCause} disabled={selectedCauses.size === 0} className="w-full py-1.5 text-xs bg-green-600 text-white rounded font-medium hover:bg-green-700 disabled:opacity-50">
                         Accept Selected Root Cause
                       </button>
                     ) : (
-                      <div className="flex items-center gap-1.5 text-xs text-green-700"><CheckCircle className="w-3.5 h-3.5" /> Root cause confirmed: {selectedCause?.cause}</div>
+                      <div className="flex items-center gap-1.5 text-xs text-green-700"><CheckCircle className="w-3.5 h-3.5" /> Root cause confirmed: {Array.from(selectedCauses).map(i => rcResult?.candidates[i]?.cause).join(", ")}</div>
                     )}
                   </div>
                 )}
@@ -617,7 +632,23 @@ export default function InvestigationWorkspacePage() {
               {/* Section 3: CAPA */}
               <div className={`p-4 ${!rcConfirmed ? "opacity-40 pointer-events-none" : capaConfirmed ? "opacity-75 pointer-events-none" : ""}`}>
                 <SectionHeader icon={Wrench} title="CAPA Recommendations" status={capaLoading ? "loading" : capaConfirmed ? "done" : "idle"} />
-                {!capaResult && !capaLoading && (
+                {!capaConfirmed && (
+                  <label className="flex items-center gap-2 text-xs text-gray-600 mb-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={noCAPANeeded}
+                      onChange={e => setNoCAPANeeded(e.target.checked)}
+                      className="h-3.5 w-3.5 text-blue-600 rounded"
+                    />
+                    No CAPA required for this deviation
+                  </label>
+                )}
+                {noCAPANeeded && !capaConfirmed && (
+                  <button onClick={() => { setCapaConfirmed(true); setCurrentStep("summary"); addAudit("INV confirmed: No CAPA required for this deviation"); }} className="w-full py-1.5 text-xs bg-green-600 text-white rounded font-medium hover:bg-green-700">
+                    Confirm — No CAPA Needed
+                  </button>
+                )}
+                {!noCAPANeeded && !capaResult && !capaLoading && (
                   <button onClick={handleRunCAPA} disabled={!rcConfirmed} className="w-full py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium disabled:opacity-50">
                     Generate CAPA Recommendations
                   </button>
@@ -744,7 +775,7 @@ export default function InvestigationWorkspacePage() {
               <div className={`p-4 ${!capaConfirmed ? "opacity-40 pointer-events-none" : ""}`}>
                 <SectionHeader icon={FileText} title="Investigation Summary" status={summaryLoading ? "loading" : summaryConfirmed ? "done" : "idle"} />
                 {!summaryDraft && !summaryLoading && (
-                  <button onClick={handleRunSummary} disabled={!capaConfirmed} className="w-full py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium disabled:opacity-50">
+                  <button onClick={handleRunSummary} disabled={!capaConfirmed || selectedCauses.size === 0} className="w-full py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium disabled:opacity-50">
                     Generate Draft Summary
                   </button>
                 )}
@@ -763,7 +794,16 @@ export default function InvestigationWorkspacePage() {
                     ].map(section => (
                       <div key={section.label} className="bg-gray-50 rounded p-2">
                         <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mb-1">{section.label}</p>
-                        <p className="text-gray-700 leading-relaxed whitespace-pre-line">{section.value}</p>
+                        {!summaryConfirmed ? (
+                          <textarea
+                            rows={3}
+                            value={editedSummarySections[section.label] ?? section.value}
+                            onChange={e => setEditedSummarySections(prev => ({ ...prev, [section.label]: e.target.value }))}
+                            className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none bg-white"
+                          />
+                        ) : (
+                          <p className="text-gray-700 leading-relaxed whitespace-pre-line">{editedSummarySections[section.label] ?? section.value}</p>
+                        )}
                       </div>
                     ))}
                     <div className={`rounded p-2 border ${summaryDraft.regulatory_risk.startsWith("HIGH") ? "bg-red-50 border-red-200" : summaryDraft.regulatory_risk.startsWith("MODERATE") ? "bg-amber-50 border-amber-200" : "bg-gray-50 border-gray-200"}`}>

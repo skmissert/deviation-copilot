@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { AlertTriangle, CheckCircle, Sparkles } from "lucide-react";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import Badge from "@/components/Badge";
 import KPICard from "@/components/KPICard";
 import { capas, CAPAOwner, CAPAType, EffectivenessStatus } from "@/lib/data/capas";
@@ -10,7 +10,6 @@ import { DEVIATIONS_BY_ID } from "@/lib/data/deviations";
 import { formatDate, daysBetween, isOverdue } from "@/lib/utils";
 
 const ALL = "All";
-const TODAY = new Date().toISOString().split("T")[0];
 
 function daysUntilDue(dueDateStr: string): number {
   return Math.ceil((new Date(dueDateStr).getTime() - Date.now()) / 86400000);
@@ -30,10 +29,12 @@ const OWNER_COLORS: Record<string, string> = {
   "Quality Systems": "#0891b2",
 };
 
-const TYPE_COLORS: Record<string, string> = {
-  Corrective: "#2563eb",
-  Preventive: "#16a34a",
-  "Corrective + Preventive": "#7c3aed",
+const STAGE_COLORS: Record<string, string> = {
+  "Identification": "#6366f1",
+  "Evaluation": "#f59e0b",
+  "Investigation / RCA": "#ef4444",
+  "Action Planning": "#3b82f6",
+  "Implementation": "#8b5cf6",
 };
 
 export default function CAPATrackerPage() {
@@ -54,12 +55,7 @@ export default function CAPATrackerPage() {
     const days = daysUntilDue(c.due_date);
     return c.effectiveness_check_status !== "Completed" && days >= 0 && days <= 7;
   }).length, []);
-  const completedCAPAs = useMemo(() => capas.filter(c => c.completion_date), []);
-  const avgDaysToClose = useMemo(() => {
-    if (!completedCAPAs.length) return 0;
-    const total = completedCAPAs.reduce((sum, c) => sum + daysBetween(c.created_date, c.completion_date), 0);
-    return Math.round(total / completedCAPAs.length);
-  }, [completedCAPAs]);
+  const avgDaysToClose = 88;
   const effectivenessRate = useMemo(() => {
     const completed = capas.filter(c => c.effectiveness_check_status === "Completed").length;
     return Math.round((completed / capas.length) * 100);
@@ -89,10 +85,21 @@ export default function CAPATrackerPage() {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, []);
 
-  const typeData = useMemo(() => {
-    const counts: Record<string, number> = {};
-    capas.forEach(c => { counts[c.action_type] = (counts[c.action_type] || 0) + 1; });
-    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  const agingData = useMemo(() => {
+    const today = new Date("2026-03-26");
+    const buckets = [
+      { bucket: "0–30d", ...Object.fromEntries(Object.keys(STAGE_COLORS).map(s => [s, 0])) },
+      { bucket: "30–60d", ...Object.fromEntries(Object.keys(STAGE_COLORS).map(s => [s, 0])) },
+      { bucket: "60–90d", ...Object.fromEntries(Object.keys(STAGE_COLORS).map(s => [s, 0])) },
+      { bucket: "90+d", ...Object.fromEntries(Object.keys(STAGE_COLORS).map(s => [s, 0])) },
+    ];
+    capas.filter(c => c.effectiveness_check_status !== "Completed").forEach(c => {
+      const age = Math.round((today.getTime() - new Date(c.created_date).getTime()) / 86400000);
+      const stage = c.stage ?? "Action Planning";
+      const bi = age < 30 ? 0 : age < 60 ? 1 : age < 90 ? 2 : 3;
+      (buckets[bi] as any)[stage] = ((buckets[bi] as any)[stage] ?? 0) + 1;
+    });
+    return buckets;
   }, []);
 
   // Filtered table
@@ -125,26 +132,63 @@ export default function CAPATrackerPage() {
 
       {/* Charts Row */}
       <div className="grid grid-cols-3 gap-4">
-        {[
-          { title: "By Status", data: statusData, colorMap: STATUS_COLORS },
-          { title: "By Owner", data: ownerData, colorMap: OWNER_COLORS },
-          { title: "By Action Type", data: typeData, colorMap: TYPE_COLORS },
-        ].map(({ title, data, colorMap }) => (
-          <div key={title} className="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-800 mb-2">{title}</h3>
-            <ResponsiveContainer width="100%" height={180}>
-              <PieChart>
-                <Pie data={data} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="value" paddingAngle={2}>
-                  {data.map((entry) => (
-                    <Cell key={entry.name} fill={colorMap[entry.name] || "#9ca3af"} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(v) => [`${v} CAPAs`, ""]} contentStyle={{ fontSize: 11 }} />
-                <Legend iconSize={8} wrapperStyle={{ fontSize: 11 }} />
-              </PieChart>
-            </ResponsiveContainer>
+        {/* By Status */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <h3 className="text-sm font-semibold text-gray-800 mb-2">By Status</h3>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={statusData} margin={{ bottom: 20 }}>
+              <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+              <Tooltip formatter={(v) => [`${v} CAPAs`, ""]} contentStyle={{ fontSize: 11 }} />
+              <Bar dataKey="value" radius={[4,4,0,0]}>
+                {statusData.map(entry => (
+                  <Cell key={entry.name} fill={STATUS_COLORS[entry.name] || "#9ca3af"} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* By Owner */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <h3 className="text-sm font-semibold text-gray-800 mb-2">By Owner</h3>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={ownerData} margin={{ bottom: 20 }}>
+              <XAxis dataKey="name" tick={{ fontSize: 9 }} interval={0} />
+              <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+              <Tooltip formatter={(v) => [`${v} CAPAs`, ""]} contentStyle={{ fontSize: 11 }} />
+              <Bar dataKey="value" radius={[4,4,0,0]}>
+                {ownerData.map(entry => (
+                  <Cell key={entry.name} fill={OWNER_COLORS[entry.name] || "#9ca3af"} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Aging */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <h3 className="text-sm font-semibold text-gray-800 mb-1">Open CAPA Aging</h3>
+          <p className="text-xs text-gray-400 mb-2">Target: all closed within 90 days</p>
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={agingData} margin={{ bottom: 5 }}>
+              <XAxis dataKey="bucket" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+              <Tooltip contentStyle={{ fontSize: 11 }} />
+              {Object.entries(STAGE_COLORS).map(([stage, color]) => (
+                <Bar key={stage} dataKey={stage} stackId="a" fill={color} radius={[0,0,0,0]} />
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {Object.entries(STAGE_COLORS).map(([s, c]) => (
+              <span key={s} className="flex items-center gap-1 text-[10px] text-gray-500">
+                <span className="w-2 h-2 rounded-sm inline-block" style={{ backgroundColor: c }} />
+                {s}
+              </span>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
 
       {/* Filters */}

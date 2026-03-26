@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { Loader2, TrendingDown, TrendingUp, Minus, Sparkles, FileText, ClipboardList, Zap, ArrowRight, CheckCircle } from "lucide-react";
-import { runSimulationAgent, SimulationResult, BASELINE_RESULT, TOTAL_INVESTIGATION_FTE } from "@/lib/agents/simulationAgent";
+import { runSimulationAgent, SimulationResult, BASELINE_RESULT } from "@/lib/agents/simulationAgent";
 
 // ─── Delta badge ──────────────────────────────────────────────────────────────
 
@@ -39,8 +39,8 @@ function LeverCard({
   title: string;
   subtitle: string;
   description: string;
-  appLink: string;
-  appLinkLabel: string;
+  appLink?: string;
+  appLinkLabel?: string;
   impacts: string[];
   children: React.ReactNode;
   active: boolean;
@@ -55,9 +55,11 @@ function LeverCard({
           <p className="text-sm font-bold text-gray-900">{title}</p>
           <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>
         </div>
-        <Link href={appLink} className="text-xs text-blue-600 hover:underline flex items-center gap-0.5 shrink-0">
-          {appLinkLabel} <ArrowRight className="w-3 h-3" />
-        </Link>
+        {appLink && appLinkLabel && (
+          <Link href={appLink} className="text-xs text-blue-600 hover:underline flex items-center gap-0.5 shrink-0">
+            {appLinkLabel} <ArrowRight className="w-3 h-3" />
+          </Link>
+        )}
       </div>
 
       <p className="text-xs text-gray-600 leading-relaxed mb-4">{description}</p>
@@ -171,12 +173,8 @@ export default function SimulationPage() {
     const parts: string[] = [];
     if (copilotAdoption > 0) parts.push(`AI Assistant at ${copilotAdoption}% adoption reduces investigation time from ${BASELINE_RESULT.avg_investigation_days}d to ${result.avg_investigation_days}d`);
     if (capaAdoption > 0) parts.push(`AI CAPA recommendations at ${capaAdoption}% adoption reduce CAPA cycle time from ${BASELINE_RESULT.avg_capa_days}d to ${result.avg_capa_days}d`);
-    if (aiTriage) parts.push(`AI intake triage reduces queue overhead and investigator context-switching`);
-    const combined = parts.join(". ");
-    const suffix = result.fte_freed > 0
-      ? ` Combined, this frees ${result.fte_freed} FTE of investigator capacity without adding headcount — available for higher-value quality activities.`
-      : "";
-    return combined + "." + suffix;
+    if (aiTriage) parts.push(`AI intake triage reduces classification time from ${BASELINE_RESULT.classification_time_days}d to ${result.classification_time_days}d`);
+    return parts.join(". ") + ".";
   })() : "";
 
   return (
@@ -200,9 +198,7 @@ export default function SimulationPage() {
           title="AI Assistant — Investigation Workflow"
           subtitle="Root Cause Analysis + Summary Drafting"
           description="Investigators use AI-suggested root causes, evidence summaries, and draft investigation reports. Each step requires human review and sign-off. Adoption rate reflects what % of the investigator team is actively using these features."
-          appLink="/deviations"
-          appLinkLabel="See it in Deviations"
-          impacts={["Investigation time", "Recurrence rate", "Investigator utilization", "FTE capacity freed"]}
+          impacts={["Investigation time", "Report drafting time"]}
           active={copilotAdoption > 0}
         >
           <AdoptionSlider value={copilotAdoption} onChange={setCopilotAdoption} />
@@ -215,9 +211,7 @@ export default function SimulationPage() {
           title="AI CAPA Recommendations"
           subtitle="CAPA Action Suggestions + Owner Assignment"
           description="AI recommends specific corrective and preventive actions based on confirmed root cause and historical CAPA patterns. Investigators review and approve before any action is created. Adoption reflects % of new CAPAs using AI recommendations."
-          appLink="/capas"
-          appLinkLabel="See it in CAPA Tracker"
-          impacts={["CAPA cycle time", "Recurrence rate"]}
+          impacts={["CAPA cycle time", "CAPA determination time"]}
           active={capaAdoption > 0}
         >
           <AdoptionSlider value={capaAdoption} onChange={setCapaAdoption} />
@@ -230,9 +224,7 @@ export default function SimulationPage() {
           title="AI Intake & Triage"
           subtitle="Auto-Classification + Routing"
           description="AI auto-classifies deviation severity and routes to the right investigator at intake — before manual review begins. Eliminates queue wait from manual triage and reduces investigator context-switching overhead."
-          appLink="/deviations"
-          appLinkLabel="See Intake step"
-          impacts={["Investigator utilization", "Queue wait"]}
+          impacts={["Classification time"]}
           active={aiTriage}
         >
           <Toggle value={aiTriage} onChange={setAiTriage} label="AI triage active" />
@@ -267,9 +259,9 @@ export default function SimulationPage() {
           {[
             { label: "Avg Investigation Time", baseline: BASELINE_RESULT.avg_investigation_days, scenario: result?.avg_investigation_days ?? null, format: (v: number) => `${v}d`, lowerIsBetter: true },
             { label: "Avg CAPA Cycle Time", baseline: BASELINE_RESULT.avg_capa_days, scenario: result?.avg_capa_days ?? null, format: (v: number) => `${v}d`, lowerIsBetter: true },
-            { label: "Investigator Utilization", baseline: BASELINE_RESULT.investigator_utilization_pct, scenario: result?.investigator_utilization_pct ?? null, format: (v: number) => `${v}%`, lowerIsBetter: true },
-            { label: "Recurrence Rate", baseline: BASELINE_RESULT.recurrence_rate_pct, scenario: result?.recurrence_rate_pct ?? null, format: (v: number) => `${v}%`, lowerIsBetter: true },
-            { label: "FTE on Routine Investigation", baseline: TOTAL_INVESTIGATION_FTE, scenario: result ? Math.round((TOTAL_INVESTIGATION_FTE - result.fte_freed) * 10) / 10 : null, format: (v: number) => `${v} FTE`, lowerIsBetter: true },
+            { label: "Classification Time", baseline: BASELINE_RESULT.classification_time_days, scenario: result?.classification_time_days ?? null, format: (v: number) => `${v}d`, lowerIsBetter: true },
+            { label: "Report Drafting Time", baseline: BASELINE_RESULT.report_drafting_days, scenario: result?.report_drafting_days ?? null, format: (v: number) => `${v}d`, lowerIsBetter: true },
+            { label: "CAPA Determination Time", baseline: BASELINE_RESULT.capa_determination_days, scenario: result?.capa_determination_days ?? null, format: (v: number) => `${v}d`, lowerIsBetter: true },
           ].map(m => (
             <MetricRow key={m.label} {...m} />
           ))}
@@ -297,7 +289,7 @@ export default function SimulationPage() {
                 See AI CAPA Recommendations <ArrowRight className="w-3 h-3" />
               </Link>
               <Link href="/people-org" className="text-xs text-blue-700 hover:underline flex items-center gap-1">
-                See People & Org implications <ArrowRight className="w-3 h-3" />
+                See People &amp; Org implications <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
           </div>

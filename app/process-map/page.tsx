@@ -73,8 +73,6 @@ function ProcessGraph({ selectedVariant }: { selectedVariant: number | null }) {
 
   // Rework loop: Investigation Complete → Re-investigation
   const reworkCount = PROCESS_CASES.filter(c => c.has_rework).length;
-  // Out-of-sequence: early CAPA
-  const earlyCapaCount = PROCESS_CASES.filter(c => c.variant_id === 4).length;
   // No-CAPA shortcut: Investigation Complete → QA Review (skipping CAPA)
   const noCapaCount = PROCESS_CASES.filter(c => c.variant_id === 2).length;
   // Director escalation
@@ -117,21 +115,6 @@ function ProcessGraph({ selectedVariant }: { selectedVariant: number | null }) {
             ↺ Re-investigation
           </text>
           <text x={REWORK_X + 7} y={433} fontSize={8} fill="#dc2626">{reworkCount} cases</text>
-        </g>
-      )}
-
-      {/* ── Out-of-sequence CAPA (left side arrow, early) ── */}
-      {earlyCapaCount > 0 && (
-        <g opacity={selectedVariant && selectedVariant !== 4 ? 0.15 : 1}>
-          <path
-            d={`M ${CENTER_X - 10} ${300 + NODE_H / 2}
-                Q ${-30} ${390}
-                  ${CENTER_X - 10} ${460 + NODE_H / 2}`}
-            fill="none" stroke="#d97706" strokeWidth={2} strokeDasharray="4,3"
-          />
-          <rect x={-68} y={370} width={62} height={30} rx={4} fill="#fef3c7" />
-          <text x={-65} y={382} fontSize={8} fill="#92400e" fontWeight="600">Pre-emptive</text>
-          <text x={-65} y={393} fontSize={8} fill="#92400e">CAPA ({earlyCapaCount})</text>
         </g>
       )}
 
@@ -239,15 +222,25 @@ export default function ProcessMapPage() {
   const avgCycleTime  = Math.round(PROCESS_CASES.reduce((s, c) => s + c.total_cycle_days, 0) / PROCESS_CASES.length);
   const reworkRate    = Math.round((PROCESS_CASES.filter(c => c.has_rework).length / PROCESS_CASES.length) * 100);
 
+  const STEP_LABEL_MAP: Record<string, string> = {
+    DEV_REPORTED:           "Detection to Reporting",
+    TRIAGE_COMPLETE:        "Classification",
+    INVESTIGATION_STARTED:  "Investigation",
+    CAPA_CREATED:           "CAPA Determination",
+    CAPA_IMPLEMENTED:       "CAPA Implementation",
+    QA_REVIEW:              "QA Review & Approval",
+  };
+
   const stepBarData = useMemo(() =>
     STEP_METRICS
-      .filter(s => ["INVESTIGATION_STARTED","INVESTIGATION_COMPLETE","CAPA_CREATED","CAPA_IMPLEMENTED","QA_REVIEW"].includes(s.activity))
+      .filter(s => Object.keys(STEP_LABEL_MAP).includes(s.activity))
       .map(s => ({
-        name: s.label.replace("Investigation","Inv.").replace("Complete","Cmplt").replace("Implemented","Impl."),
+        name: STEP_LABEL_MAP[s.activity],
         avg: s.avg_dwell_days,
         max: s.max_dwell_days,
         violations: s.violation_count,
       }))
+      .sort((a, b) => Object.values(STEP_LABEL_MAP).indexOf(a.name) - Object.values(STEP_LABEL_MAP).indexOf(b.name))
   , []);
 
   return (
@@ -274,11 +267,11 @@ export default function ProcessMapPage() {
       {/* KPI Strip */}
       <div className="grid grid-cols-5 gap-3">
         {[
-          { label: "Cases Analyzed",      value: PROCESS_CASES.length,      sub: "deviations mined",              color: "text-gray-900" },
-          { label: "Path without CAPA",      value: `${happyPathRate}%`,        sub: "no CAPA required",              color: happyPathRate > 50 ? "text-green-700" : "text-amber-700" },
-          { label: "Conformance Score",    value: `${CONFORMANCE_SCORE}%`,    sub: "no sequence violations",        color: CONFORMANCE_SCORE > 75 ? "text-green-700" : "text-red-700" },
-          { label: "Avg Cycle Time",       value: `${avgCycleTime}d`,         sub: "report to closure",             color: "text-gray-900" },
-          { label: "Rework Rate",          value: `${reworkRate}%`,           sub: "re-investigation required",     color: reworkRate > 10 ? "text-red-700" : "text-green-700" },
+          { label: "Cases Analyzed", value: PROCESS_CASES.length, sub: "deviations mined", color: "text-gray-900" },
+          { label: "Test Right First Time %", value: "99%", sub: "target: 99.9%", color: "text-green-700" },
+          { label: "Path with CAPA", value: "15%", sub: "formal CAPA required", color: "text-amber-700" },
+          { label: "% Approved within 30d", value: `${Math.round((PROCESS_CASES.filter(c => c.total_cycle_days <= 30).length / PROCESS_CASES.length) * 100)}%`, sub: "closed within 30 days", color: "text-gray-900" },
+          { label: "Rework Rate", value: `${reworkRate}%`, sub: "re-investigation required", color: reworkRate > 10 ? "text-red-700" : "text-green-700" },
         ].map(k => (
           <div key={k.label} className="bg-white rounded-lg border border-gray-200 p-3">
             <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">{k.label}</p>
@@ -369,7 +362,7 @@ export default function ProcessMapPage() {
           {/* Violations summary */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-gray-800">Conformance Violations &amp; Process Inefficiencies</h2>
+              <h2 className="text-sm font-semibold text-gray-800">Process Hot Spots</h2>
               <span className="text-xs text-gray-500 font-medium">
                 Click any row to expand
               </span>
