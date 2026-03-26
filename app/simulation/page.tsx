@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { Loader2, TrendingDown, TrendingUp, Minus, Sparkles, FileText, ClipboardList, Zap, ArrowRight, CheckCircle } from "lucide-react";
-import { runSimulationAgent, SimulationResult, BASELINE_RESULT } from "@/lib/agents/simulationAgent";
+import { runSimulationAgent, SimulationResult, BASELINE_RESULT, TOTAL_INVESTIGATION_FTE } from "@/lib/agents/simulationAgent";
 
 // ─── Delta badge ──────────────────────────────────────────────────────────────
 
@@ -269,7 +269,7 @@ export default function SimulationPage() {
             { label: "Avg CAPA Cycle Time", baseline: BASELINE_RESULT.avg_capa_days, scenario: result?.avg_capa_days ?? null, format: (v: number) => `${v}d`, lowerIsBetter: true },
             { label: "Investigator Utilization", baseline: BASELINE_RESULT.investigator_utilization_pct, scenario: result?.investigator_utilization_pct ?? null, format: (v: number) => `${v}%`, lowerIsBetter: true },
             { label: "Recurrence Rate", baseline: BASELINE_RESULT.recurrence_rate_pct, scenario: result?.recurrence_rate_pct ?? null, format: (v: number) => `${v}%`, lowerIsBetter: true },
-            { label: "Investigator FTE Freed", baseline: 0, scenario: result ? result.fte_freed : null, format: (v: number) => v > 0 ? `${v} FTE` : "—", lowerIsBetter: false },
+            { label: "FTE on Routine Investigation", baseline: TOTAL_INVESTIGATION_FTE, scenario: result ? Math.round((TOTAL_INVESTIGATION_FTE - result.fte_freed) * 10) / 10 : null, format: (v: number) => `${v} FTE`, lowerIsBetter: true },
           ].map(m => (
             <MetricRow key={m.label} {...m} />
           ))}

@@ -25,6 +25,13 @@ const BASELINE = {
   hours_per_investigation: 16,
 };
 
+// Total FTE currently spent on manual investigation tasks (used as baseline for FTE row)
+// 8 inv/month × 16 hrs ÷ (40 hrs × 0.55 utilisation × 4.33 wks) ≈ 1.3 FTE
+const EFFECTIVE_FTE_HOURS = 40 * 0.55 * 4.33;
+export const TOTAL_INVESTIGATION_FTE = Math.round(
+  (BASELINE.monthly_investigations * BASELINE.hours_per_investigation / EFFECTIVE_FTE_HOURS) * 10
+) / 10;
+
 export const BASELINE_RESULT: SimulationResult = {
   avg_investigation_days: BASELINE.avg_investigation_days,
   avg_capa_days: BASELINE.avg_capa_days,
@@ -76,11 +83,10 @@ export async function runSimulationAgent(params: SimulationParams): Promise<Simu
 
   // FTE freed: hours saved per month / effective FTE hours per month
   // 8 inv/month × 16 hrs × 35% reduction at full adoption = 44.8 hrs/month saved
-  const effective_fte_hours_per_month = 40 * 0.55 * 4.33; // ~95 hrs/month per FTE
   const hours_saved = BASELINE.monthly_investigations
     * BASELINE.hours_per_investigation
     * 0.35 * copilot;
-  const fte_freed = hours_saved / effective_fte_hours_per_month;
+  const fte_freed = hours_saved / EFFECTIVE_FTE_HOURS;
 
   return {
     avg_investigation_days: Math.round(avg_investigation_days * 10) / 10,
