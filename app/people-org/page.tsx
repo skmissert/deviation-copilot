@@ -14,9 +14,9 @@ import { BASELINE_RESULT } from "@/lib/agents/simulationAgent";
 
 // ─── Legend constants ────────────────────────────────────────────────────────
 const LEGEND = [
-  { key: "HUMAN",     Icon: UserCircle, color: "#6b7280", label: "Human" },
+  { key: "HUMAN",     Icon: UserCircle, color: "#7c3aed", label: "Human" },
   { key: "HUMAN_AI",  Icon: Sparkles,   color: "#2563eb", label: "Human + AI" },
-  { key: "AUTOMATED", Icon: Zap,        color: "#16a34a", label: "Fully Automated" },
+  { key: "AUTOMATED", Icon: Zap,        color: "#059669", label: "Fully Automated" },
 ] as const;
 
 // ─── Simulation constants ────────────────────────────────────────────────────
@@ -43,8 +43,8 @@ interface ModeConfig {
 const MODE: Record<WorkMode, ModeConfig> = {
   human: {
     label: "Human",
-    bg: "bg-gray-100", border: "border-gray-300", text: "text-gray-600",
-    iconColor: "text-gray-500", Icon: UserCircle,
+    bg: "bg-violet-50", border: "border-violet-300", text: "text-violet-700",
+    iconColor: "text-violet-600", Icon: UserCircle,
   },
   "human+ai": {
     label: "Human + AI",
@@ -53,8 +53,8 @@ const MODE: Record<WorkMode, ModeConfig> = {
   },
   automated: {
     label: "Fully Automated",
-    bg: "bg-green-50", border: "border-green-300", text: "text-green-700",
-    iconColor: "text-green-600", Icon: Zap,
+    bg: "bg-emerald-50", border: "border-emerald-300", text: "text-emerald-700",
+    iconColor: "text-emerald-600", Icon: Zap,
   },
 };
 
@@ -391,25 +391,25 @@ export default function PeopleOrgPage() {
                   <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-3">Today</p>
                   {/* Top — narrowest */}
                   <div className="flex justify-center w-full" style={{ paddingInline: "30%" }}>
-                    <div className="w-full bg-gray-300 border border-gray-400 rounded py-1.5 text-[10px] text-gray-700 font-semibold text-center flex flex-col items-center gap-0.5">
-                      <UserCircle className="w-3 h-3 text-gray-500" />
+                    <div className="w-full bg-violet-50 border border-violet-300 rounded py-1.5 text-[10px] text-violet-700 font-semibold text-center flex flex-col items-center gap-0.5">
+                      <UserCircle className="w-3 h-3 text-violet-600" />
                       CAPA Review Board
                     </div>
                   </div>
-                  <div className="text-gray-400 text-xs leading-none my-0.5">↑</div>
+                  <div className="text-gray-300 text-xs leading-none my-0.5">↑</div>
                   {/* Middle */}
                   <div className="flex justify-center w-full" style={{ paddingInline: "15%" }}>
-                    <div className="w-full bg-gray-200 border border-gray-300 rounded py-1.5 text-[10px] text-gray-600 font-semibold text-center flex flex-col items-center gap-0.5">
-                      <UserCircle className="w-3 h-3 text-gray-500" />
+                    <div className="w-full bg-violet-50 border border-violet-300 rounded py-1.5 text-[10px] text-violet-700 font-semibold text-center flex flex-col items-center gap-0.5">
+                      <UserCircle className="w-3 h-3 text-violet-600" />
                       Senior QA Investigator
                     </div>
                   </div>
-                  <div className="text-gray-400 text-xs leading-none my-0.5">↑</div>
+                  <div className="text-gray-300 text-xs leading-none my-0.5">↑</div>
                   {/* Bottom — full width */}
                   <div className="w-full grid grid-cols-2 gap-1">
                     {["QA Investigator", "QA Investigator", "QA Investigator", "QA Investigator"].map((r, i) => (
-                      <div key={i} className="bg-gray-100 border border-gray-300 rounded py-1 text-[9px] text-gray-500 text-center flex flex-col items-center gap-0.5">
-                        <UserCircle className="w-2.5 h-2.5 text-gray-400" />{r}
+                      <div key={i} className="bg-violet-50 border border-violet-300 rounded py-1 text-[9px] text-violet-700 text-center flex flex-col items-center gap-0.5">
+                        <UserCircle className="w-2.5 h-2.5 text-violet-600" />{r}
                       </div>
                     ))}
                   </div>
@@ -426,37 +426,37 @@ export default function PeopleOrgPage() {
                   <p className="text-[9px] font-black uppercase tracking-widest text-green-600 mb-3">Future</p>
                   {/* Top — same narrow */}
                   <div className="flex justify-center w-full" style={{ paddingInline: "30%" }}>
-                    <div className="w-full bg-green-100 border border-green-300 rounded py-1.5 text-[10px] text-green-800 font-semibold text-center flex flex-col items-center gap-0.5">
-                      <UserCircle className="w-3 h-3 text-gray-500" />
+                    <div className="w-full bg-violet-50 border border-violet-300 rounded py-1.5 text-[10px] text-violet-700 font-semibold text-center flex flex-col items-center gap-0.5">
+                      <UserCircle className="w-3 h-3 text-violet-600" />
                       QA Leadership
                     </div>
                   </div>
-                  <div className="text-green-500 text-xs leading-none my-0.5">↕</div>
+                  <div className="text-gray-300 text-xs leading-none my-0.5">↕</div>
                   {/* AI Routing band — spans full width */}
-                  <div className="w-full bg-green-700 rounded py-1 text-[10px] text-white font-semibold text-center flex items-center justify-center gap-1">
+                  <div className="w-full bg-emerald-600 rounded py-1 text-[10px] text-white font-semibold text-center flex items-center justify-center gap-1">
                     <Zap className="w-3 h-3" /> AI Routing Layer
                   </div>
-                  <div className="text-green-500 text-xs leading-none my-0.5">↕</div>
+                  <div className="text-gray-300 text-xs leading-none my-0.5">↕</div>
                   {/* Middle — wider than today */}
                   <div className="w-full grid grid-cols-2 gap-1">
-                    <div className="bg-blue-50 border border-blue-200 rounded py-1.5 text-[9px] text-blue-700 font-medium text-center flex flex-col items-center gap-0.5">
-                      <Sparkles className="w-2.5 h-2.5 text-blue-500" />
+                    <div className="bg-blue-50 border border-blue-300 rounded py-1.5 text-[9px] text-blue-700 font-medium text-center flex flex-col items-center gap-0.5">
+                      <Sparkles className="w-2.5 h-2.5 text-blue-600" />
                       AI-Enabled<br/>Reviewers
                     </div>
-                    <div className="bg-blue-50 border border-blue-200 rounded py-1.5 text-[9px] text-blue-700 font-medium text-center flex flex-col items-center gap-0.5">
-                      <Sparkles className="w-2.5 h-2.5 text-blue-500" />
+                    <div className="bg-blue-50 border border-blue-300 rounded py-1.5 text-[9px] text-blue-700 font-medium text-center flex flex-col items-center gap-0.5">
+                      <Sparkles className="w-2.5 h-2.5 text-blue-600" />
                       Cross-functional<br/>Coordinators
                     </div>
                   </div>
-                  <div className="text-green-500 text-xs leading-none my-0.5">↕</div>
+                  <div className="text-gray-300 text-xs leading-none my-0.5">↕</div>
                   {/* Bottom — narrower than today */}
                   <div className="flex justify-center w-full" style={{ paddingInline: "25%" }}>
-                    <div className="w-full bg-green-50 border border-green-300 rounded py-1.5 text-[9px] text-green-700 font-medium text-center flex flex-col items-center gap-0.5">
-                      <UserCircle className="w-2.5 h-2.5 text-gray-500" />
+                    <div className="w-full bg-violet-50 border border-violet-300 rounded py-1.5 text-[9px] text-violet-700 font-medium text-center flex flex-col items-center gap-0.5">
+                      <UserCircle className="w-2.5 h-2.5 text-violet-600" />
                       Investigators ×2
                     </div>
                   </div>
-                  <p className="text-[9px] text-green-600 italic font-medium mt-3 text-center">Integrated, cross-functional,<br/>AI-orchestrated</p>
+                  <p className="text-[9px] text-gray-500 italic font-medium mt-3 text-center">Integrated, cross-functional,<br/>AI-orchestrated</p>
                 </div>
               </div>
 
@@ -471,9 +471,9 @@ export default function PeopleOrgPage() {
 
               {/* Role type legend */}
               <div className="flex gap-4">
-                <span className="flex items-center gap-1 text-[10px] text-gray-500"><UserCircle className="w-3 h-3 text-gray-500" /> Human</span>
-                <span className="flex items-center gap-1 text-[10px] text-blue-600"><Sparkles className="w-3 h-3 text-blue-500" /> Human + AI</span>
-                <span className="flex items-center gap-1 text-[10px] text-green-700"><Zap className="w-3 h-3 text-green-600" /> Fully Automated</span>
+                <span className="flex items-center gap-1 text-[10px] text-violet-700"><UserCircle className="w-3 h-3 text-violet-600" /> Human</span>
+                <span className="flex items-center gap-1 text-[10px] text-blue-700"><Sparkles className="w-3 h-3 text-blue-600" /> Human + AI</span>
+                <span className="flex items-center gap-1 text-[10px] text-emerald-700"><Zap className="w-3 h-3 text-emerald-600" /> Fully Automated</span>
               </div>
             </div>
 
