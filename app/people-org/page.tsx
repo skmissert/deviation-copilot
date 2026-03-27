@@ -233,9 +233,8 @@ export default function PeopleOrgPage() {
               </p>
             </div>
             <div className="space-y-2">
-              <DataCallout label="Avg cycle time" value={`${avgCycleTime}d`} sub="target: 30d" status={avgCycleTime > 30 ? "warn" : "ok"} />
-              <DataCallout label="Queue wait time" value={`${QUEUE_WAIT}d`} sub="before investigation starts" status="warn" />
-              <DataCallout label="Cycle time with AI" value={`${Math.round(avgCycleTime * 0.7)}d`} sub="Digital Twin projection (−30%)" status="ok" />
+              <DataCallout label="Cycle time — Today" value={`${avgCycleTime}d`} sub="current state, target: 30d" status={avgCycleTime > 30 ? "warn" : "ok"} />
+              <DataCallout label="Cycle time — Future" value={`${Math.round(avgCycleTime * 0.7)}d`} sub="with AI assistance (Digital Twin, −30%)" status="ok" />
             </div>
           </div>
 
