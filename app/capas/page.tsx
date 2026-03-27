@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { AlertTriangle, CheckCircle, Sparkles } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Cell, Tooltip, ResponsiveContainer, LabelList } from "recharts";
 import Badge from "@/components/Badge";
 import KPICard from "@/components/KPICard";
 import { capas, CAPAOwner, CAPAType, EffectivenessStatus } from "@/lib/data/capas";
@@ -86,7 +86,7 @@ export default function CAPATrackerPage() {
         counts["Pending"]++;
       }
     });
-    return Object.entries(counts).filter(([, v]) => v > 0).map(([name, value]) => ({ name, value }));
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, []);
 
   const ownerData = useMemo(() => {
@@ -170,13 +170,14 @@ export default function CAPATrackerPage() {
       <div className="grid grid-cols-4 gap-4">
         {/* By Status */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h3 className="text-sm font-semibold text-gray-800 mb-2">By Status</h3>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={statusData} margin={{ bottom: 20 }}>
-              <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-              <Tooltip formatter={(v) => [`${v} CAPAs`, ""]} contentStyle={{ fontSize: 11 }} />
-              <Bar dataKey="value" radius={[4,4,0,0]}>
+          <h3 className="text-sm font-semibold text-gray-800 mb-3">By Status</h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={statusData} margin={{ top: 20, bottom: 8, left: 0, right: 8 }} barCategoryGap="35%">
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} allowDecimals={false} width={28} />
+              <Tooltip formatter={(v) => [`${v} CAPAs`, ""]} contentStyle={{ fontSize: 12 }} />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="value" position="top" style={{ fontSize: 13, fontWeight: 600, fill: "#374151" }} />
                 {statusData.map(entry => (
                   <Cell key={entry.name} fill={STATUS_COLORS[entry.name] || "#9ca3af"} />
                 ))}
@@ -185,15 +186,16 @@ export default function CAPATrackerPage() {
           </ResponsiveContainer>
         </div>
 
-        {/* By Owner */}
+        {/* By Owner — horizontal bars so names aren't cut off */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h3 className="text-sm font-semibold text-gray-800 mb-2">By Owner</h3>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={ownerData} margin={{ bottom: 20 }}>
-              <XAxis dataKey="name" tick={{ fontSize: 9 }} interval={0} />
-              <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-              <Tooltip formatter={(v) => [`${v} CAPAs`, ""]} contentStyle={{ fontSize: 11 }} />
-              <Bar dataKey="value" radius={[4,4,0,0]}>
+          <h3 className="text-sm font-semibold text-gray-800 mb-3">By Owner</h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={ownerData} layout="vertical" margin={{ top: 4, bottom: 4, left: 0, right: 36 }} barCategoryGap="30%">
+              <XAxis type="number" tick={{ fontSize: 12 }} allowDecimals={false} />
+              <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 12 }} />
+              <Tooltip formatter={(v) => [`${v} CAPAs`, ""]} contentStyle={{ fontSize: 12 }} />
+              <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                <LabelList dataKey="value" position="right" style={{ fontSize: 13, fontWeight: 600, fill: "#374151" }} />
                 {ownerData.map(entry => (
                   <Cell key={entry.name} fill={OWNER_COLORS[entry.name] || "#9ca3af"} />
                 ))}
@@ -204,22 +206,23 @@ export default function CAPATrackerPage() {
 
         {/* Aging */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h3 className="text-sm font-semibold text-gray-800 mb-1">Open CAPA Aging</h3>
-          <p className="text-xs text-gray-400 mb-2">Target: all closed within 90 days</p>
-          <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={agingData} margin={{ bottom: 5 }}>
-              <XAxis dataKey="bucket" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-              <Tooltip contentStyle={{ fontSize: 11 }} />
-              {Object.entries(STAGE_COLORS).map(([stage, color]) => (
-                <Bar key={stage} dataKey={stage} stackId="a" fill={color} radius={[0,0,0,0]} />
+          <h3 className="text-sm font-semibold text-gray-800 mb-0.5">Open CAPA Aging</h3>
+          <p className="text-xs text-gray-400 mb-3">Target: all closed within 90 days</p>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={agingData} margin={{ top: 4, bottom: 4, left: 0, right: 8 }} barCategoryGap="25%">
+              <XAxis dataKey="bucket" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} allowDecimals={false} width={28} />
+              <Tooltip contentStyle={{ fontSize: 12 }} />
+              {Object.entries(STAGE_COLORS).map(([stage, color], i, arr) => (
+                <Bar key={stage} dataKey={stage} stackId="a" fill={color}
+                  radius={i === arr.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
               ))}
             </BarChart>
           </ResponsiveContainer>
-          <div className="flex flex-wrap gap-1.5 mt-1">
+          <div className="flex flex-wrap gap-2 mt-2">
             {Object.entries(STAGE_COLORS).map(([s, c]) => (
-              <span key={s} className="flex items-center gap-1 text-[10px] text-gray-500">
-                <span className="w-2 h-2 rounded-sm inline-block" style={{ backgroundColor: c }} />
+              <span key={s} className="flex items-center gap-1 text-xs text-gray-600">
+                <span className="w-2.5 h-2.5 rounded-sm inline-block shrink-0" style={{ backgroundColor: c }} />
                 {s}
               </span>
             ))}
@@ -228,13 +231,19 @@ export default function CAPATrackerPage() {
 
         {/* CAPA Type Split */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h3 className="text-sm font-semibold text-gray-800 mb-2">CAPA Type Split</h3>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={capaTypeSplitData} margin={{ bottom: 20 }}>
-              <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-              <Tooltip formatter={(v) => [`${v} CAPAs`, ""]} contentStyle={{ fontSize: 11 }} />
+          <h3 className="text-sm font-semibold text-gray-800 mb-3">CAPA Type Split</h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={capaTypeSplitData} margin={{ top: 28, bottom: 8, left: 0, right: 8 }} barCategoryGap="40%">
+              <XAxis dataKey="name" tick={{ fontSize: 13 }} />
+              <YAxis tick={{ fontSize: 12 }} allowDecimals={false} width={28} />
+              <Tooltip formatter={(v) => [`${v} CAPAs`, ""]} contentStyle={{ fontSize: 12 }} />
               <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                <LabelList
+                  dataKey="value"
+                  position="top"
+                  formatter={(v) => `${v} (${Math.round((Number(v) / capas.length) * 100)}%)`}
+                  style={{ fontSize: 12, fontWeight: 600, fill: "#374151" }}
+                />
                 {capaTypeSplitData.map(entry => (
                   <Cell key={entry.name} fill={entry.fill} />
                 ))}
