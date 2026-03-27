@@ -248,43 +248,101 @@ export default function PeopleOrgPage() {
             </div>
             <div className="grid grid-cols-[1fr_200px] gap-6 items-start">
 
-              {/* Time allocation chart */}
-              <div className="space-y-3">
+              {/* Time allocation chart — 3 bars: Today | AI Unlock | Future */}
+              <div className="space-y-1.5">
+
                 {/* Legend */}
-                <div className="flex gap-4">
+                <div className="flex gap-4 mb-2">
                   {(["evergreen","emerging","deprioritized"] as const).map(cat => (
                     <span key={cat} className="flex items-center gap-1.5 text-[10px] text-gray-600">
                       <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ backgroundColor: ALLOC_COLORS[cat].future }} />
                       {ALLOC_COLORS[cat].label}
                     </span>
                   ))}
+                  <span className="flex items-center gap-1.5 text-[10px] text-gray-600">
+                    <span className="w-2.5 h-2.5 rounded-sm inline-block bg-amber-400" />
+                    AI Unlocked
+                  </span>
                 </div>
 
-                {/* Today bar */}
-                {(["today","future"] as const).map(period => (
-                  <div key={period} className="flex items-center gap-3">
-                    <span className={`text-[10px] font-bold uppercase tracking-widest w-10 shrink-0 ${period === "future" ? "text-green-600" : "text-gray-400"}`}>
-                      {period === "today" ? "Today" : "Future"}
-                    </span>
-                    <div className="flex-1 flex h-8 rounded overflow-hidden">
-                      {TIME_ALLOC.filter(a => a[period] > 0).map(a => (
-                        <div
-                          key={a.label}
-                          title={`${a.label}: ${a[period]}%`}
-                          className="relative flex items-center justify-center overflow-hidden"
-                          style={{ width: `${a[period]}%`, backgroundColor: ALLOC_COLORS[a.cat][period] }}
-                        >
-                          {a[period] >= 5 && (
-                            <span className="text-[9px] font-bold text-white drop-shadow-sm select-none">{a[period]}%</span>
-                          )}
-                        </div>
-                      ))}
+                {/* BAR 1: Today */}
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-bold uppercase tracking-widest w-20 shrink-0 text-gray-400">Today</span>
+                  <div className="flex-1 flex h-9 rounded overflow-hidden">
+                    {TIME_ALLOC.filter(a => a.today > 0).map(a => (
+                      <div key={a.label} title={`${a.label}: ${a.today}%`}
+                        className="flex items-center justify-center overflow-hidden"
+                        style={{ width: `${a.today}%`, backgroundColor: ALLOC_COLORS[a.cat].today }}>
+                        {a.today >= 5 && <span className="text-[9px] font-bold text-white drop-shadow-sm">{a.today}%</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* CONNECTOR 1: Today deprioritised (65%) → Unlock freed (45%) */}
+                <div className="flex gap-3 items-center">
+                  <div className="w-20 shrink-0 flex justify-end pr-1">
+                    <span className="text-[9px] text-amber-600 font-semibold">45% freed ↓</span>
+                  </div>
+                  <svg viewBox="0 0 100 12" preserveAspectRatio="none" width="100%" height="12" className="flex-1">
+                    <polygon points="0,0 65,0 45,12 0,12" fill="#fef3c7" />
+                    <line x1="65" y1="0" x2="45" y2="12" stroke="#f59e0b" strokeWidth="0.8" strokeDasharray="2,1.5" />
+                    <line x1="0" y1="0" x2="0" y2="12" stroke="#f59e0b" strokeWidth="0.5" strokeDasharray="2,1.5" />
+                  </svg>
+                </div>
+
+                {/* BAR 2: AI Productivity Unlock */}
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-bold uppercase tracking-widest w-20 shrink-0 text-amber-500 leading-tight">AI Unlock</span>
+                  <div className="flex-1 flex h-9 rounded overflow-hidden">
+                    <div title="Manual documentation freed: 20%" className="flex items-center justify-center overflow-hidden"
+                      style={{ width: "20%", backgroundColor: "#f59e0b" }}>
+                      <span className="text-[9px] font-bold text-white drop-shadow-sm">−20%</span>
+                    </div>
+                    <div title="System data entry freed: 10%" className="flex items-center justify-center overflow-hidden"
+                      style={{ width: "10%", backgroundColor: "#fbbf24" }}>
+                      <span className="text-[9px] font-bold text-amber-900">−10%</span>
+                    </div>
+                    <div title="Rework & iteration freed: 15%" className="flex items-center justify-center overflow-hidden"
+                      style={{ width: "15%", backgroundColor: "#fcd34d" }}>
+                      <span className="text-[9px] font-bold text-amber-900">−15%</span>
+                    </div>
+                    <div className="flex items-center justify-center overflow-hidden flex-1"
+                      style={{ backgroundColor: "#f3f4f6" }}>
+                      <span className="text-[9px] text-gray-400">55% retained</span>
                     </div>
                   </div>
-                ))}
+                </div>
+
+                {/* CONNECTOR 2: Unlock freed (45%) reinvested → Future value-add expands */}
+                <div className="flex gap-3 items-center">
+                  <div className="w-20 shrink-0 flex justify-end pr-1">
+                    <span className="text-[9px] text-green-600 font-semibold">↓ reinvested</span>
+                  </div>
+                  <svg viewBox="0 0 100 12" preserveAspectRatio="none" width="100%" height="12" className="flex-1">
+                    <polygon points="0,0 45,0 15,12 0,12" fill="#dcfce7" />
+                    <polygon points="45,0 100,0 100,12 15,12" fill="#f0fdf4" />
+                    <line x1="45" y1="0" x2="15" y2="12" stroke="#16a34a" strokeWidth="0.8" strokeDasharray="2,1.5" />
+                    <line x1="0" y1="0" x2="0" y2="12" stroke="#16a34a" strokeWidth="0.5" strokeDasharray="2,1.5" />
+                  </svg>
+                </div>
+
+                {/* BAR 3: Future */}
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-bold uppercase tracking-widest w-20 shrink-0 text-green-600">Future</span>
+                  <div className="flex-1 flex h-9 rounded overflow-hidden">
+                    {TIME_ALLOC.filter(a => a.future > 0).map(a => (
+                      <div key={a.label} title={`${a.label}: ${a.future}%`}
+                        className="flex items-center justify-center overflow-hidden"
+                        style={{ width: `${a.future}%`, backgroundColor: ALLOC_COLORS[a.cat].future }}>
+                        {a.future >= 5 && <span className="text-[9px] font-bold text-white drop-shadow-sm">{a.future}%</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
                 {/* Activity key */}
-                <div className="grid grid-cols-3 gap-x-4 gap-y-0.5 mt-1">
+                <div className="grid grid-cols-3 gap-x-4 gap-y-0.5 pt-1">
                   {TIME_ALLOC.filter(a => a.today > 0 || a.future > 0).map(a => (
                     <div key={a.label} className="flex items-center gap-1">
                       <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: ALLOC_COLORS[a.cat].future }} />
@@ -293,25 +351,25 @@ export default function PeopleOrgPage() {
                   ))}
                 </div>
 
-                {/* FTE From/To */}
-                <div className="bg-gray-100 rounded-lg p-3 flex items-center gap-3">
-                  <div className="text-xs text-gray-500 shrink-0">Today</div>
-                  <div className="flex-1 flex items-center gap-2 min-w-0">
-                    <div className="bg-gray-400 rounded px-2 py-1 text-white text-xs font-semibold whitespace-nowrap">
-                      1.0 FTE manual investigation
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400 shrink-0" />
-                    <div className="bg-green-600 rounded px-2 py-1 text-white text-xs font-semibold whitespace-nowrap">
-                      0.5 FTE redeployed to complex cases
-                    </div>
+                {/* FTE 3-state bar */}
+                <div className="bg-gray-100 rounded-lg p-2.5 flex items-center gap-2 flex-wrap mt-1">
+                  <div className="bg-gray-400 rounded px-2 py-1 text-white text-xs font-semibold whitespace-nowrap">
+                    Today: 1.0 FTE
                   </div>
-                  <div className="text-xs text-green-700 font-semibold shrink-0">Future</div>
+                  <ArrowRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                  <div className="rounded px-2 py-1 text-xs font-semibold whitespace-nowrap" style={{ backgroundColor: "#f59e0b", color: "#78350f" }}>
+                    0.5 FTE freed by AI
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                  <div className="bg-green-600 rounded px-2 py-1 text-white text-xs font-semibold whitespace-nowrap">
+                    0.5 FTE → complex cases &amp; AI oversight
+                  </div>
                 </div>
 
                 {/* Bottom callout */}
                 <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                   <p className="text-[11px] text-green-800 font-medium">
-                    Time spent on judgment and value-add work increases from ~30% to ~60% in the reimagined model
+                    AI unlocks ~45% of investigator time from manual tasks — reinvested into judgment, oversight, and process improvement
                   </p>
                 </div>
               </div>
