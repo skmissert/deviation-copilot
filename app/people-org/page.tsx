@@ -98,7 +98,7 @@ function StepBox({ name, mode }: { name: string; mode: WorkMode }) {
   const m = MODE[mode];
   const Icon = m.Icon;
   return (
-    <div className={`flex flex-col items-center justify-center gap-1 px-1.5 py-2 rounded-lg border-2 ${m.bg} ${m.border} w-full`}>
+    <div className={`flex flex-col items-center justify-center gap-1 px-1.5 py-2 rounded-lg border-2 ${m.bg} ${m.border} w-full h-[60px]`}>
       <Icon className={`w-3.5 h-3.5 ${m.iconColor} shrink-0`} />
       <div className="text-center leading-tight">
         {name.split("\n").map((l, i) => (
@@ -112,9 +112,9 @@ function StepBox({ name, mode }: { name: string; mode: WorkMode }) {
 function ProcessFlow() {
   return (
     <div className="overflow-x-auto pb-1">
-      <div className="flex items-start gap-0.5" style={{ minWidth: 540 }}>
+      <div className="flex items-start gap-0.5" style={{ minWidth: 560 }}>
         {/* Row labels */}
-        <div className="flex flex-col gap-2 shrink-0 w-9 pr-1">
+        <div className="flex flex-col gap-2 shrink-0 w-14">
           <div className="h-[60px] flex items-center justify-end">
             <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Today</span>
           </div>
