@@ -20,24 +20,27 @@ const LEGEND = [
 ] as const;
 
 // ─── Investigator time allocation (illustrative) ─────────────────────────────
-// Categories match Talent row exactly: evergreen=green, emerging=blue, deprioritized=gray
-const TIME_ALLOC: { label: string; today: number; future: number; cat: "evergreen"|"emerging"|"deprioritized" }[] = [
-  { label: "Manual documentation & data entry", today: 25, future:  5, cat: "deprioritized" },
-  { label: "System data entry (Veeva)",          today: 15, future:  5, cat: "deprioritized" },
-  { label: "Rework & iteration on root cause",   today: 20, future:  5, cat: "deprioritized" },
-  { label: "Root cause investigation",           today: 15, future: 25, cat: "evergreen"     },
-  { label: "Review & sign-off",                  today: 10, future: 20, cat: "evergreen"     },
-  { label: "CAPA coordination",                  today:  5, future: 15, cat: "evergreen"     },
-  { label: "Cross-functional alignment",         today:  5, future: 15, cat: "emerging"      },
-  { label: "AI output validation",               today:  0, future: 10, cat: "emerging"      },
-  { label: "Process improvement activities",     today:  0, future:  0, cat: "emerging"      },
+// Independent color scheme — NOT tied to Talent row skill categories
+type AllocCat = "reduced" | "retained" | "netnew";
+
+const TIME_ALLOC: { label: string; today: number; futureDevMgmt: number; barCat: AllocCat }[] = [
+  { label: "Manual documentation & data entry", today: 25, futureDevMgmt:  5, barCat: "reduced"  },
+  { label: "System data entry (Veeva)",          today: 15, futureDevMgmt:  5, barCat: "reduced"  },
+  { label: "Rework & iteration on root cause",   today: 20, futureDevMgmt:  5, barCat: "reduced"  },
+  { label: "CAPA coordination",                  today:  5, futureDevMgmt:  5, barCat: "reduced"  },
+  { label: "Root cause investigation",           today: 15, futureDevMgmt: 15, barCat: "retained" },
+  { label: "Review & sign-off",                  today: 10, futureDevMgmt: 10, barCat: "retained" },
+  { label: "Cross-functional alignment",         today:  5, futureDevMgmt:  5, barCat: "retained" },
+  { label: "AI output validation",               today:  0, futureDevMgmt:  5, barCat: "netnew"   },
+  { label: "Process improvement activities",     today:  0, futureDevMgmt:  0, barCat: "netnew"   },
 ];
-// Today evergreen ~30%, future ~60% — matches bottom callout
-const ALLOC_COLORS = {
-  deprioritized: { today: "#d1d5db", future: "#9ca3af", label: "Deprioritized" },
-  evergreen:     { today: "#86efac", future: "#16a34a", label: "Evergreen"     },
-  emerging:      { today: "#93c5fd", future: "#2563eb", label: "Emerging"      },
-} as const;
+
+// Self-contained bar color scheme — independent of Talent row
+const BAR_COLORS: Record<AllocCat, { color: string; label: string }> = {
+  reduced:  { color: "#9ca3af", label: "Reduced by AI"         },
+  retained: { color: "#15803d", label: "Retained or increased"  },
+  netnew:   { color: "#2563eb", label: "Net new activities"     },
+};
 
 // ─── Simulation constants ────────────────────────────────────────────────────
 const AVG_INV_DAYS   = 12.5;
@@ -248,16 +251,16 @@ export default function PeopleOrgPage() {
             </div>
             <div className="grid grid-cols-[1fr_200px] gap-6 items-start">
 
-              {/* Time allocation chart — 3 bars: Today | After AI | Future */}
-              <div className="space-y-0">
+              {/* Time allocation chart — Today vs Future */}
+              <div className="space-y-2">
 
-                {/* Legend */}
-                <div className="flex flex-wrap gap-3 mb-3">
+                {/* Legend — self-contained, independent of Talent row */}
+                <div className="flex flex-wrap gap-3 mb-1">
                   {[
-                    { color: "#16a34a", label: "Evergreen" },
-                    { color: "#2563eb", label: "Emerging" },
-                    { color: "#9ca3af", label: "Deprioritized" },
-                    { color: "#f59e0b", label: "AI Freed / Returned to Org" },
+                    { color: "#9ca3af", label: "Reduced by AI"          },
+                    { color: "#15803d", label: "Retained or increased"   },
+                    { color: "#f59e0b", label: "Freed — returned to org" },
+                    { color: "#2563eb", label: "Net new activities"      },
                   ].map(({ color, label }) => (
                     <span key={label} className="flex items-center gap-1.5 text-[10px] text-gray-600">
                       <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ backgroundColor: color }} />
@@ -268,166 +271,102 @@ export default function PeopleOrgPage() {
 
                 {/* BAR 1 — Today */}
                 <div className="flex items-center gap-3">
-                  <div className="w-24 shrink-0 text-right pr-1">
+                  <div className="w-16 shrink-0 text-right pr-1">
                     <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Today</span>
                   </div>
                   <div className="flex-1 flex h-10 rounded overflow-hidden border border-gray-200">
-                    {/* Manual doc 25% — grey */}
-                    <div title="Manual documentation & data entry: 25%" style={{ flex: 25, backgroundColor: "#d1d5db" }}
-                      className="flex items-center justify-center border-r border-gray-300 overflow-hidden">
-                      <span className="text-[9px] font-bold text-gray-600">25%</span>
+                    {/* Manual 25% — grey */}
+                    <div title="Manual documentation & data entry: 25%" style={{ flex: 25, backgroundColor: "#9ca3af" }}
+                      className="flex items-center justify-center border-r border-gray-400/30 overflow-hidden">
+                      <span className="text-[9px] font-bold text-white">25%</span>
                     </div>
                     {/* Veeva 15% — grey */}
-                    <div title="System data entry (Veeva): 15%" style={{ flex: 15, backgroundColor: "#d1d5db" }}
-                      className="flex items-center justify-center border-r border-gray-300 overflow-hidden">
-                      <span className="text-[9px] font-bold text-gray-600">15%</span>
+                    <div title="System data entry (Veeva): 15%" style={{ flex: 15, backgroundColor: "#9ca3af" }}
+                      className="flex items-center justify-center border-r border-gray-400/30 overflow-hidden">
+                      <span className="text-[9px] font-bold text-white">15%</span>
                     </div>
                     {/* Rework 20% — grey */}
-                    <div title="Rework & iteration on root cause: 20%" style={{ flex: 20, backgroundColor: "#d1d5db" }}
-                      className="flex items-center justify-center border-r border-white/50 overflow-hidden">
-                      <span className="text-[9px] font-bold text-gray-600">20%</span>
+                    <div title="Rework & iteration on root cause: 20%" style={{ flex: 20, backgroundColor: "#9ca3af" }}
+                      className="flex items-center justify-center border-r border-gray-400/30 overflow-hidden">
+                      <span className="text-[9px] font-bold text-white">20%</span>
                     </div>
-                    {/* Root cause 15% — green */}
-                    <div title="Root cause investigation: 15%" style={{ flex: 15, backgroundColor: "#86efac" }}
-                      className="flex items-center justify-center border-r border-green-200 overflow-hidden">
-                      <span className="text-[9px] font-bold text-green-800">15%</span>
+                    {/* CAPA coord 5% — grey (reduced/routine) */}
+                    <div title="CAPA coordination: 5%" style={{ flex: 5, backgroundColor: "#9ca3af" }}
+                      className="flex items-center justify-center border-r border-white/40 overflow-hidden" />
+                    {/* Root cause 15% — dark green */}
+                    <div title="Root cause investigation: 15%" style={{ flex: 15, backgroundColor: "#15803d" }}
+                      className="flex items-center justify-center border-r border-green-900/20 overflow-hidden">
+                      <span className="text-[9px] font-bold text-white">15%</span>
                     </div>
-                    {/* Review 10% — green */}
-                    <div title="Review & sign-off: 10%" style={{ flex: 10, backgroundColor: "#86efac" }}
-                      className="flex items-center justify-center border-r border-green-200 overflow-hidden">
-                      <span className="text-[9px] font-bold text-green-800">10%</span>
+                    {/* Review 10% — dark green */}
+                    <div title="Review & sign-off: 10%" style={{ flex: 10, backgroundColor: "#15803d" }}
+                      className="flex items-center justify-center border-r border-green-900/20 overflow-hidden">
+                      <span className="text-[9px] font-bold text-white">10%</span>
                     </div>
-                    {/* CAPA coord 5% — green */}
-                    <div title="CAPA coordination: 5%" style={{ flex: 5, backgroundColor: "#86efac" }}
-                      className="flex items-center justify-center border-r border-green-200 overflow-hidden" />
-                    {/* Cross-func 5% — blue */}
-                    <div title="Cross-functional alignment: 5%" style={{ flex: 5, backgroundColor: "#93c5fd" }}
+                    {/* Cross-func 5% — dark green (grows in future) */}
+                    <div title="Cross-functional alignment: 5%" style={{ flex: 5, backgroundColor: "#15803d" }}
                       className="flex items-center justify-center overflow-hidden" />
                   </div>
                 </div>
 
-                {/* CONNECTOR 1 — grey (60%) → amber (60%) same width, dotted outline */}
-                <div className="flex gap-3">
-                  <div className="w-24 shrink-0" />
-                  <div className="flex-1">
-                    <svg viewBox="0 0 100 8" preserveAspectRatio="none" width="100%" height="8">
-                      <polygon points="0,0 63.2,0 63.2,8 0,8" fill="#fef3c7" opacity="0.9" />
-                      <line x1="63.2" y1="0" x2="63.2" y2="8" stroke="#f59e0b" strokeWidth="1" strokeDasharray="2,1.5" />
-                      <line x1="0" y1="0" x2="0" y2="8" stroke="#f59e0b" strokeWidth="0.6" strokeDasharray="2,1.5" />
-                    </svg>
-                  </div>
-                </div>
+                {/* Spacer between bars */}
+                <div className="h-1" />
 
-                {/* BAR 2 — After AI Assistance */}
+                {/* BAR 2 — Future State */}
                 <div className="flex items-start gap-3">
-                  <div className="w-24 shrink-0 text-right pr-1 pt-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 leading-tight">After AI<br/>Assist.</span>
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <div className="flex h-10 rounded overflow-hidden border border-amber-300">
-                      {/* 45% freed — dark amber */}
-                      <div title="45% freed — returned to organization" style={{ flex: 45, backgroundColor: "#f59e0b" }}
-                        className="flex items-center justify-center border-r border-amber-400 overflow-hidden px-1">
-                        <span className="text-[9px] font-bold text-amber-900 text-center leading-tight whitespace-nowrap">45% freed ↑ org</span>
-                      </div>
-                      {/* 15% retained deprioritized — light amber */}
-                      <div title="15% some manual work remains" style={{ flex: 15, backgroundColor: "#fcd34d" }}
-                        className="flex items-center justify-center border-r border-amber-200 overflow-hidden px-0.5">
-                        <span className="text-[9px] font-semibold text-amber-800 text-center leading-tight whitespace-nowrap">15% remain</span>
-                      </div>
-                      {/* Root cause 15% — green */}
-                      <div title="Root cause investigation: 15%" style={{ flex: 15, backgroundColor: "#86efac" }}
-                        className="flex items-center justify-center border-r border-green-200 overflow-hidden">
-                        <span className="text-[9px] font-bold text-green-800">15%</span>
-                      </div>
-                      {/* Review 10% — green */}
-                      <div title="Review & sign-off: 10%" style={{ flex: 10, backgroundColor: "#86efac" }}
-                        className="flex items-center justify-center border-r border-green-200 overflow-hidden">
-                        <span className="text-[9px] font-bold text-green-800">10%</span>
-                      </div>
-                      {/* CAPA 5% — green */}
-                      <div title="CAPA coordination: 5%" style={{ flex: 5, backgroundColor: "#86efac" }}
-                        className="flex items-center justify-center border-r border-green-200 overflow-hidden" />
-                      {/* Cross-func 5% — blue */}
-                      <div title="Cross-functional alignment: 5%" style={{ flex: 5, backgroundColor: "#93c5fd" }}
-                        className="flex items-center justify-center overflow-hidden" />
-                    </div>
-                    {/* Annotation below bar 2 */}
-                    <div className="flex text-[9px] text-gray-400 leading-tight">
-                      <div style={{ flex: 45 }} className="text-amber-700 font-semibold">↑ returned to org</div>
-                      <div style={{ flex: 15 }} className="text-amber-600">some manual remains</div>
-                      <div style={{ flex: 35 }} className="text-gray-400">unchanged</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* CONNECTOR 2 — amber 63.2% → amber 45%, tapering */}
-                <div className="flex gap-3">
-                  <div className="w-24 shrink-0" />
-                  <div className="flex-1">
-                    <svg viewBox="0 0 100 10" preserveAspectRatio="none" width="100%" height="10">
-                      <polygon points="0,0 63.2,0 45,10 0,10" fill="#fef3c7" opacity="0.9" />
-                      <line x1="63.2" y1="0" x2="45" y2="10" stroke="#f59e0b" strokeWidth="1" strokeDasharray="2,1.5" />
-                      <line x1="0" y1="0" x2="0" y2="10" stroke="#f59e0b" strokeWidth="0.6" strokeDasharray="2,1.5" />
-                    </svg>
-                  </div>
-                </div>
-
-                {/* BAR 3 — Future State */}
-                <div className="flex items-start gap-3">
-                  <div className="w-24 shrink-0 text-right pr-1 pt-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-green-600">Future</span>
+                  <div className="w-16 shrink-0 text-right pr-1 pt-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-green-700">Future</span>
                   </div>
                   <div className="flex-1 space-y-1">
                     <div className="flex h-10 rounded overflow-hidden border border-gray-200">
                       {/* 45% freed — amber, returned to org */}
-                      <div title="45% freed — returned to broader organization" style={{ flex: 45, backgroundColor: "#fbbf24" }}
-                        className="flex items-center justify-center border-r border-amber-300 overflow-hidden px-1">
-                        <span className="text-[9px] font-bold text-amber-900 text-center leading-tight whitespace-nowrap">45% → org</span>
+                      <div title="45% freed — returned to broader organization" style={{ flex: 45, backgroundColor: "#f59e0b" }}
+                        className="flex items-center justify-center border-r border-amber-400 overflow-hidden px-1">
+                        <span className="text-[9px] font-bold text-amber-950 text-center leading-tight whitespace-nowrap">45% → org</span>
                       </div>
-                      {/* 5% manual — grey (some remains) */}
-                      <div title="Manual documentation: 5% remains" style={{ flex: 5, backgroundColor: "#d1d5db" }}
-                        className="flex items-center justify-center border-r border-gray-300 overflow-hidden" />
+                      {/* 5% manual — grey */}
+                      <div title="Manual documentation: 5% remains" style={{ flex: 5, backgroundColor: "#9ca3af" }}
+                        className="flex items-center justify-center border-r border-gray-400/30 overflow-hidden" />
                       {/* 5% Veeva — grey */}
-                      <div title="System data entry: 5% remains" style={{ flex: 5, backgroundColor: "#d1d5db" }}
-                        className="flex items-center justify-center border-r border-gray-300 overflow-hidden" />
+                      <div title="System data entry: 5% remains" style={{ flex: 5, backgroundColor: "#9ca3af" }}
+                        className="flex items-center justify-center border-r border-gray-400/30 overflow-hidden" />
                       {/* 5% rework — grey */}
-                      <div title="Rework: 5% remains" style={{ flex: 5, backgroundColor: "#d1d5db" }}
-                        className="flex items-center justify-center border-r border-white/50 overflow-hidden" />
-                      {/* Root cause 15% — green */}
-                      <div title="Root cause investigation: 15%" style={{ flex: 15, backgroundColor: "#16a34a" }}
-                        className="flex items-center justify-center border-r border-green-700 overflow-hidden">
+                      <div title="Rework: 5% remains" style={{ flex: 5, backgroundColor: "#9ca3af" }}
+                        className="flex items-center justify-center border-r border-gray-400/30 overflow-hidden" />
+                      {/* 5% CAPA coord — grey (reduced) */}
+                      <div title="CAPA coordination: 5% remains" style={{ flex: 5, backgroundColor: "#9ca3af" }}
+                        className="flex items-center justify-center border-r border-white/40 overflow-hidden" />
+                      {/* Root cause 15% — dark green */}
+                      <div title="Root cause investigation: 15%" style={{ flex: 15, backgroundColor: "#15803d" }}
+                        className="flex items-center justify-center border-r border-green-900/20 overflow-hidden">
                         <span className="text-[9px] font-bold text-white">15%</span>
                       </div>
-                      {/* Review 10% — green */}
-                      <div title="Review & sign-off: 10%" style={{ flex: 10, backgroundColor: "#16a34a" }}
-                        className="flex items-center justify-center border-r border-green-700 overflow-hidden">
+                      {/* Review 10% — dark green */}
+                      <div title="Review & sign-off: 10%" style={{ flex: 10, backgroundColor: "#15803d" }}
+                        className="flex items-center justify-center border-r border-green-900/20 overflow-hidden">
                         <span className="text-[9px] font-bold text-white">10%</span>
                       </div>
-                      {/* CAPA 5% — green */}
-                      <div title="CAPA coordination: 5%" style={{ flex: 5, backgroundColor: "#16a34a" }}
-                        className="flex items-center justify-center border-r border-green-700 overflow-hidden" />
-                      {/* Cross-func 5% — blue */}
-                      <div title="Cross-functional alignment: 5%" style={{ flex: 5, backgroundColor: "#2563eb" }}
-                        className="flex items-center justify-center border-r border-blue-700 overflow-hidden" />
-                      {/* AI validation 5% — blue */}
-                      <div title="AI output validation: 5%" style={{ flex: 5, backgroundColor: "#2563eb" }}
+                      {/* Cross-func 5% — dark green */}
+                      <div title="Cross-functional alignment: 5%" style={{ flex: 5, backgroundColor: "#15803d" }}
+                        className="flex items-center justify-center border-r border-green-900/20 overflow-hidden" />
+                      {/* AI validation 5% — blue (net new) */}
+                      <div title="AI output validation: 5% — net new activity" style={{ flex: 5, backgroundColor: "#2563eb" }}
                         className="flex items-center justify-center overflow-hidden" />
                     </div>
-                    {/* Annotation below bar 3 */}
+                    {/* Annotation row */}
                     <div className="flex text-[9px] leading-tight">
-                      <div style={{ flex: 45 }} className="text-amber-700 font-semibold">Freed — other QA workflows,<br/>APQR, batch disposition</div>
-                      <div style={{ flex: 15 }} className="text-gray-400 text-center">15% manual<br/>remains</div>
-                      <div style={{ flex: 40 }} className="text-green-700 text-right">40% reinvested<br/>in value-add</div>
+                      <div style={{ flex: 45 }} className="text-amber-700 font-semibold">Freed — APQR, batch<br/>disposition, other QA</div>
+                      <div style={{ flex: 20 }} className="text-gray-400 text-center">20% routine<br/>remains</div>
+                      <div style={{ flex: 35 }} className="text-green-700 text-right">30% core +<br/>5% net new</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Activity key */}
-                <div className="grid grid-cols-3 gap-x-4 gap-y-0.5 pt-2 pb-1">
-                  {TIME_ALLOC.filter(a => a.today > 0 || a.future > 0).map(a => (
+                <div className="grid grid-cols-3 gap-x-4 gap-y-0.5 pt-1 pb-1">
+                  {TIME_ALLOC.filter(a => a.today > 0 || a.futureDevMgmt > 0).map(a => (
                     <div key={a.label} className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: ALLOC_COLORS[a.cat].future }} />
+                      <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: BAR_COLORS[a.barCat].color }} />
                       <span className="text-[9px] text-gray-500 truncate">{a.label}</span>
                     </div>
                   ))}
@@ -449,7 +388,7 @@ export default function PeopleOrgPage() {
                 </div>
 
                 {/* Bottom callout */}
-                <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 mt-1">
+                <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                   <p className="text-[11px] text-green-800 font-medium">
                     AI returns ~45% of investigator time to the organization — capacity that funds the next reinvention wave.
                   </p>
