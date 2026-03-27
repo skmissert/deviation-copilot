@@ -211,13 +211,20 @@ export default function CAPATrackerPage() {
 
       {/* Charts Row */}
       <div className="grid grid-cols-4 gap-4">
-        {/* By Status */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h3 className="text-sm font-semibold text-gray-800 mb-4">By Status</h3>
-          <StackedBar segments={statusData.map(d => ({ label: d.name, value: d.value, color: STATUS_COLORS[d.name] || "#9ca3af" }))} />
+
+        {/* Col 1: By Status + CAPA Type Split stacked */}
+        <div className="flex flex-col gap-4">
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <h3 className="text-sm font-semibold text-gray-800 mb-4">By Status</h3>
+            <StackedBar segments={statusData.map(d => ({ label: d.name, value: d.value, color: STATUS_COLORS[d.name] || "#9ca3af" }))} />
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <h3 className="text-sm font-semibold text-gray-800 mb-4">CAPA Type Split</h3>
+            <StackedBar segments={capaTypeSplitData.map(d => ({ label: d.name, value: d.value, color: d.fill }))} />
+          </div>
         </div>
 
-        {/* By Owner — horizontal bars so names aren't cut off */}
+        {/* Col 2: By Owner */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <h3 className="text-sm font-semibold text-gray-800 mb-3">By Owner</h3>
           <ResponsiveContainer width="100%" height={240}>
@@ -235,11 +242,11 @@ export default function CAPATrackerPage() {
           </ResponsiveContainer>
         </div>
 
-        {/* Aging */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        {/* Cols 3–4: Open CAPA Aging (double width) */}
+        <div className="col-span-2 bg-white rounded-lg border border-gray-200 p-4">
           <h3 className="text-sm font-semibold text-gray-800 mb-0.5">Open CAPA Aging</h3>
           <p className="text-xs text-gray-400 mb-3">Target: all closed within 90 days</p>
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={220}>
             <BarChart data={agingData} margin={{ top: 4, bottom: 4, left: 0, right: 8 }} barCategoryGap="25%">
               <XAxis dataKey="bucket" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} allowDecimals={false} width={28} />
@@ -250,7 +257,7 @@ export default function CAPATrackerPage() {
               ))}
             </BarChart>
           </ResponsiveContainer>
-          <div className="flex flex-wrap gap-2 mt-2">
+          <div className="flex flex-wrap gap-3 mt-2">
             {Object.entries(STAGE_COLORS).map(([s, c]) => (
               <span key={s} className="flex items-center gap-1 text-xs text-gray-600">
                 <span className="w-2.5 h-2.5 rounded-sm inline-block shrink-0" style={{ backgroundColor: c }} />
@@ -260,11 +267,6 @@ export default function CAPATrackerPage() {
           </div>
         </div>
 
-        {/* CAPA Type Split */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h3 className="text-sm font-semibold text-gray-800 mb-4">CAPA Type Split</h3>
-          <StackedBar segments={capaTypeSplitData.map(d => ({ label: d.name, value: d.value, color: d.fill }))} />
-        </div>
       </div>
 
       {/* Filters */}
