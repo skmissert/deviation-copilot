@@ -52,7 +52,7 @@ const PILLARS: Pillar[] = [
         targetLabel: "≤30 days",
         description: "Report to closure — primary driver of batch release delay",
         whyItMatters:
-          "In GxP manufacturing, every day a deviation remains open is a day the affected batch cannot be released. Regulators expect documented closure timelines, and chronic overruns are cited in 483 observations. This metric is the headline indicator of how well the quality system is functioning end-to-end.",
+          "In GxP manufacturing, every day a deviation remains open is a day the affected batch cannot be released. Regulators expect documented closure timelines, and chronic overruns are a compliance risk. This metric is the headline indicator of how well the quality system is functioning end-to-end.",
         keyDrivers: [
           "Time to containment and initial triage speed",
           "Investigator availability and current backlog",
