@@ -19,6 +19,26 @@ const LEGEND = [
   { key: "AUTOMATED", Icon: Zap,        color: "#059669", label: "Fully Automated" },
 ] as const;
 
+// ─── Investigator time allocation (illustrative) ─────────────────────────────
+// Categories match Talent row exactly: evergreen=green, emerging=blue, deprioritized=gray
+const TIME_ALLOC: { label: string; today: number; future: number; cat: "evergreen"|"emerging"|"deprioritized" }[] = [
+  { label: "Manual documentation & data entry", today: 25, future:  5, cat: "deprioritized" },
+  { label: "System data entry (Veeva)",          today: 15, future:  5, cat: "deprioritized" },
+  { label: "Rework & iteration on root cause",   today: 25, future:  5, cat: "deprioritized" },
+  { label: "Root cause investigation",           today: 15, future: 25, cat: "evergreen"     },
+  { label: "Review & sign-off",                  today: 10, future: 20, cat: "evergreen"     },
+  { label: "CAPA coordination",                  today:  5, future: 15, cat: "evergreen"     },
+  { label: "Cross-functional alignment",         today:  5, future: 15, cat: "emerging"      },
+  { label: "AI output validation",               today:  0, future: 10, cat: "emerging"      },
+  { label: "Process improvement activities",     today:  0, future:  0, cat: "emerging"      },
+];
+// Today evergreen ~30%, future ~60% — matches bottom callout
+const ALLOC_COLORS = {
+  deprioritized: { today: "#d1d5db", future: "#9ca3af", label: "Deprioritized" },
+  evergreen:     { today: "#86efac", future: "#16a34a", label: "Evergreen"     },
+  emerging:      { today: "#93c5fd", future: "#2563eb", label: "Emerging"      },
+} as const;
+
 // ─── Simulation constants ────────────────────────────────────────────────────
 const AVG_INV_DAYS   = 12.5;
 const AI_INV_DAYS    = parseFloat((BASELINE_RESULT.avg_investigation_days * (1 - 0.35)).toFixed(1));
@@ -193,51 +213,101 @@ export default function PeopleOrgPage() {
       <div className="space-y-4">
 
         {/* ── ROW 1: TASKS ──────────────────────────────────────────────────── */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <div className="grid grid-cols-[220px_1fr_220px] gap-6 items-start">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
 
-            {/* Left: anchor question */}
+          {/* Top: workflow view */}
+          <div className="grid grid-cols-[220px_1fr_220px] gap-6 items-start">
             <div>
               <p className="text-[10px] text-gray-400 uppercase tracking-widest font-semibold mb-2">Tasks</p>
               <p className="text-green-700 font-bold text-base leading-snug">
                 Which deviation management tasks do we automate, augment, or keep human?
               </p>
             </div>
-
-            {/* Center: process flow visual (preserved exactly) */}
             <div className="space-y-3">
               <ProcessFlow />
               <p className="text-[10px] text-gray-400 italic leading-relaxed">
                 CAPA Decision is kept fully Human — GxP accountability requires investigator sign-off at every step. All AI output requires human confirmation before any record is created.
               </p>
             </div>
-
-            {/* Right: data callouts */}
             <div className="space-y-2">
-              <DataCallout
-                label="Avg cycle time"
-                value={`${avgCycleTime}d`}
-                sub="target: 30d"
-                status={avgCycleTime > 30 ? "warn" : "ok"}
-              />
-              <DataCallout
-                label="Queue wait time"
-                value={`${QUEUE_WAIT}d`}
-                sub="before investigation starts"
-                status="warn"
-              />
-              <DataCallout
-                label="Cycle time with AI"
-                value={`${Math.round(avgCycleTime * 0.7)}d`}
-                sub="Digital Twin projection (−30%)"
-                status="ok"
-              />
-              <DataCallout
-                label="Path without CAPA"
-                value={`${VARIANTS.find(v => v.id === 2)?.pct ?? 34}%`}
-                sub="no CAPA required"
-                status="neutral"
-              />
+              <DataCallout label="Avg cycle time" value={`${avgCycleTime}d`} sub="target: 30d" status={avgCycleTime > 30 ? "warn" : "ok"} />
+              <DataCallout label="Queue wait time" value={`${QUEUE_WAIT}d`} sub="before investigation starts" status="warn" />
+              <DataCallout label="Cycle time with AI" value={`${Math.round(avgCycleTime * 0.7)}d`} sub="Digital Twin projection (−30%)" status="ok" />
+              <DataCallout label="Path without CAPA" value={`${VARIANTS.find(v => v.id === 2)?.pct ?? 34}%`} sub="no CAPA required" status="neutral" />
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-gray-100" />
+
+          {/* Sub-section: Investigator time allocation */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <p className="text-sm font-bold text-gray-800">What This Means for the Individual Investigator</p>
+              <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">Illustrative</span>
+            </div>
+            <div className="grid grid-cols-[1fr_200px] gap-6 items-start">
+
+              {/* Time allocation chart */}
+              <div className="space-y-3">
+                {/* Legend */}
+                <div className="flex gap-4">
+                  {(["evergreen","emerging","deprioritized"] as const).map(cat => (
+                    <span key={cat} className="flex items-center gap-1.5 text-[10px] text-gray-600">
+                      <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ backgroundColor: ALLOC_COLORS[cat].future }} />
+                      {ALLOC_COLORS[cat].label}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Today bar */}
+                {(["today","future"] as const).map(period => (
+                  <div key={period} className="flex items-center gap-3">
+                    <span className={`text-[10px] font-bold uppercase tracking-widest w-10 shrink-0 ${period === "future" ? "text-green-600" : "text-gray-400"}`}>
+                      {period === "today" ? "Today" : "Future"}
+                    </span>
+                    <div className="flex-1 flex h-8 rounded overflow-hidden">
+                      {TIME_ALLOC.filter(a => a[period] > 0).map(a => (
+                        <div
+                          key={a.label}
+                          title={`${a.label}: ${a[period]}%`}
+                          className="relative flex items-center justify-center overflow-hidden"
+                          style={{ width: `${a[period]}%`, backgroundColor: ALLOC_COLORS[a.cat][period] }}
+                        >
+                          {a[period] >= 5 && (
+                            <span className="text-[9px] font-bold text-white drop-shadow-sm select-none">{a[period]}%</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Activity key */}
+                <div className="grid grid-cols-3 gap-x-4 gap-y-0.5 mt-1">
+                  {TIME_ALLOC.filter(a => a.today > 0 || a.future > 0).map(a => (
+                    <div key={a.label} className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: ALLOC_COLORS[a.cat].future }} />
+                      <span className="text-[9px] text-gray-500 truncate">{a.label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Bottom callout */}
+                <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                  <p className="text-[11px] text-green-800 font-medium">
+                    Time spent on judgment and value-add work increases from ~30% to ~60% in the reimagined model
+                  </p>
+                </div>
+              </div>
+
+              {/* Right: investigator data callouts (moved from Talent row) */}
+              <div className="space-y-2">
+                <DataCallout label="Investigator utilization" value={`${BASELINE_UTIL}%`} sub="target: <80%" status="warn" />
+                <DataCallout label="Utilization with AI" value={`${AI_UTIL}%`} sub="Digital Twin projection" status="ok" />
+                <DataCallout label="Capacity released" value={`${FTE_FREED} FTE`} sub="redeployed to complex cases" status="ok" />
+                <DataCallout label="Avg investigation" value={`${AVG_INV_DAYS}d → ${AI_INV_DAYS}d`} sub={`target: ≤${INV_TARGET_DAYS}d`} status="ok" />
+              </div>
             </div>
           </div>
         </div>
@@ -340,32 +410,11 @@ export default function PeopleOrgPage() {
               </div>
             </div>
 
-            {/* Right: data callouts */}
-            <div className="space-y-2">
-              <DataCallout
-                label="Investigator utilization"
-                value={`${BASELINE_UTIL}%`}
-                sub="target: <80%"
-                status="warn"
-              />
-              <DataCallout
-                label="Utilization with AI"
-                value={`${AI_UTIL}%`}
-                sub="Digital Twin projection"
-                status="ok"
-              />
-              <DataCallout
-                label="Capacity released"
-                value={`${FTE_FREED} FTE`}
-                sub="redeployed to complex cases"
-                status="ok"
-              />
-              <DataCallout
-                label="Avg investigation"
-                value={`${AVG_INV_DAYS}d → ${AI_INV_DAYS}d`}
-                sub={`target: ≤${INV_TARGET_DAYS}d`}
-                status="ok"
-              />
+            {/* Right: note pointing to sub-section */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+              <p className="text-[10px] text-gray-500 leading-relaxed">
+                Quantitative investigator impact — utilization, capacity release, and investigation duration — is shown in the <span className="font-semibold text-gray-700">Investigator Time Allocation</span> sub-section in the Tasks row above.
+              </p>
             </div>
           </div>
         </div>
