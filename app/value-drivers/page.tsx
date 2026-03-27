@@ -4,7 +4,7 @@ import Link from "next/link";
 import { X, Target, ChevronDown, ArrowRight, CheckCircle, AlertCircle } from "lucide-react";
 import { deviations } from "@/lib/data/deviations";
 import { capas } from "@/lib/data/capas";
-import { PROCESS_CASES, CONFORMANCE_SCORE } from "@/lib/data/processEvents";
+import { PROCESS_CASES } from "@/lib/data/processEvents";
 import { daysBetween } from "@/lib/utils";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -37,8 +37,8 @@ type SelectedMetric = { pillarId: string; metricId: string } | null;
 
 const PILLARS: Pillar[] = [
   {
-    id: "process-time",
-    name: "Process Time",
+    id: "deviation-perf",
+    name: "Deviation Mgmt Performance",
     subtitle: "End-to-end deviation resolution speed",
     headerBg: "bg-indigo-600",
     cardBg: "bg-indigo-50",
@@ -59,7 +59,7 @@ const PILLARS: Pillar[] = [
           "Completeness of evidence package at investigation start",
           "QA review queue depth and reviewer bandwidth",
         ],
-        connectedTo: ["Investigation Duration", "QA Review Turnaround", "Open Deviation Backlog"],
+        connectedTo: ["Avg Investigation Duration", "Open Deviation Backlog", "Aging Deviations"],
       },
       {
         id: "aging-deviations",
@@ -74,76 +74,7 @@ const PILLARS: Pillar[] = [
           "QA reviewer bandwidth and competing priorities",
           "Complexity distribution of incoming deviations",
         ],
-        connectedTo: ["Investigator Utilization", "Open Deviation Backlog", "Avg Cycle Time"],
-      },
-    ],
-  },
-  {
-    id: "capa-mgmt",
-    name: "CAPA Mgmt Performance",
-    subtitle: "Timeliness and aging of corrective actions",
-    headerBg: "bg-emerald-600",
-    cardBg: "bg-emerald-50",
-    cardBorder: "border-emerald-200",
-    badgeColor: "bg-emerald-100 text-emerald-800",
-    pageLink: "/capas",
-    metrics: [
-      {
-        id: "capa-closure",
-        name: "Avg CAPA Closure Time",
-        targetLabel: "≤45 days",
-        description: "Days from CAPA creation to implementation completion",
-        whyItMatters:
-          "CAPA closure time measures how quickly the quality system translates identified problems into implemented solutions. Prolonged CAPA cycles expose the site to continued risk from unresolved root causes and create regulatory commitment breach exposure. ICH Q10 requires timely and effective CAPA implementation.",
-        keyDrivers: [
-          "Owner accountability and visibility into upcoming due dates",
-          "Resource availability for implementation (engineering, training, IT)",
-          "Realism of committed timelines at CAPA creation",
-          "Escalation and reminder workflow configuration",
-        ],
-        connectedTo: ["Recurrence Rate", "Conformance Score", "Avg Cycle Time"],
-      },
-      {
-        id: "aging-capas",
-        name: "Aging CAPAs (>90d)",
-        targetLabel: "0",
-        description: "Open CAPAs older than 90 days from creation — direct audit finding risk",
-        whyItMatters:
-          "Any open CAPA older than 90 days represents a documented quality commitment that has not been fulfilled. Regulators read CAPA tracking reports line by line. Aging open CAPAs signal that either the timeline was unrealistic, the owner lacks resources, or implementation accountability is insufficient.",
-        keyDrivers: [
-          "CAPA timeline realism at point of creation",
-          "Owner capacity and competing priorities",
-          "Escalation trigger configuration in QMS",
-          "Cross-functional dependency management",
-        ],
-        connectedTo: ["Avg CAPA Closure Time", "Investigator Utilization", "Conformance Score"],
-      },
-    ],
-  },
-  {
-    id: "capacity",
-    name: "Capacity & Throughput",
-    subtitle: "Team bandwidth relative to incoming workload",
-    headerBg: "bg-blue-600",
-    cardBg: "bg-blue-50",
-    cardBorder: "border-blue-200",
-    badgeColor: "bg-blue-100 text-blue-800",
-    pageLink: "/",
-    metrics: [
-      {
-        id: "utilization",
-        name: "Investigator Utilization",
-        targetLabel: "70–85%",
-        description: "Optimal zone — above 85% risks quality degradation and burnout",
-        whyItMatters:
-          "Investigator utilization is a leading indicator of queue pressure and investigation quality risk. Below 70%, capacity is wasted; above 85%, investigators are under chronic time pressure — when corners get cut, documentation errors increase, and root cause analyses become superficial. Sustained over-utilization is directly correlated with RFT failures and rising recurrence rates.",
-        keyDrivers: [
-          "Deviation arrival rate relative to investigator FTE",
-          "Non-investigation time demands (meetings, training, audits)",
-          "AI assistance adoption — reduces per-investigation effort significantly",
-          "Investigator skill mix vs. complexity distribution of incoming deviations",
-        ],
-        connectedTo: ["Investigation Start Lag", "Open Deviation Backlog", "Avg Investigation Duration"],
+        connectedTo: ["Open Deviation Backlog", "Avg Cycle Time"],
       },
       {
         id: "backlog",
@@ -154,95 +85,11 @@ const PILLARS: Pillar[] = [
           "Backlog is the queue visibility metric. When more deviations are arriving than are being closed, the backlog grows — and with it, cycle times, batch hold durations, and investigator stress. A backlog above 10 per site is a strong predictor of upcoming SLA breaches.",
         keyDrivers: [
           "Deviation arrival rate — seasonality, campaign volume, new product launches",
-          "Investigator throughput capacity (FTE × effective hours per week)",
           "Investigation complexity and average duration",
           "Priority and escalation logic — are critical deviations being expedited?",
+          "AI-assisted investigation reducing per-case cycle time",
         ],
-        connectedTo: ["Investigator Utilization", "Avg Cycle Time", "Aging Deviations"],
-      },
-    ],
-  },
-  {
-    id: "compliance",
-    name: "Compliance & Risk",
-    subtitle: "Regulatory exposure in how the process is run",
-    headerBg: "bg-rose-600",
-    cardBg: "bg-rose-50",
-    cardBorder: "border-rose-200",
-    badgeColor: "bg-rose-100 text-rose-800",
-    pageLink: "/deviations",
-    metrics: [
-      {
-        id: "recurring-dev-pct",
-        name: "Recurring Deviation %",
-        targetLabel: "<10%",
-        description: "% of deviations flagged as repeat occurrences — CAPA effectiveness signal",
-        whyItMatters:
-          "Recurring deviations are the clearest evidence of CAPA system failure. When the same issue reappears, the corrective action either was never fully implemented or did not address the actual systemic driver. Regulators treat high recurrence rates as a signal of a broken quality system and will cite them in audit findings.",
-        keyDrivers: [
-          "CAPA effectiveness check rigor and timeliness",
-          "Root cause identification accuracy — fixing root causes vs. symptoms",
-          "Systemic vs. local CAPA scope — local fixes rarely prevent recurrence",
-          "Historical pattern awareness across investigations",
-        ],
-        connectedTo: ["Recurrence Rate", "CAPA Closure Time", "Conformance Score"],
-      },
-      {
-        id: "doc-accuracy",
-        name: "Documentation Accuracy",
-        targetLabel: ">75%",
-        description: "% of deviations not caused by documentation errors — GMP baseline indicator",
-        whyItMatters:
-          "Documentation errors are the most common root cause category in this dataset. In GxP environments, documentation is not administrative overhead — it is the product of the quality system. Persistent documentation error rates signal operator training gaps, SOP clarity issues, or workload-driven shortcuts that create audit exposure.",
-        keyDrivers: [
-          "Operator training and competency verification on GMP documentation practices",
-          "Electronic batch record system design and error-proofing",
-          "Review and approval workflow configuration",
-          "Workload and time pressure during batch execution",
-        ],
-        connectedTo: ["Recurring Deviation %", "Recurrence Rate", "Conformance Score"],
-      },
-    ],
-  },
-  {
-    id: "inv-quality",
-    name: "Investigation Quality",
-    subtitle: "Rigor, sequence adherence, and recurrence prevention",
-    headerBg: "bg-purple-600",
-    cardBg: "bg-purple-50",
-    cardBorder: "border-purple-200",
-    badgeColor: "bg-purple-100 text-purple-800",
-    pageLink: "/process-map",
-    metrics: [
-      {
-        id: "conformance",
-        name: "Conformance Score",
-        targetLabel: ">75%",
-        description: "% of investigations following required SOP activity sequence",
-        whyItMatters:
-          "Regulators evaluate not just what conclusions were reached — but how the investigation was conducted. The sequence of activities (containment → investigation → CAPA → closure) is codified in 21 CFR Part 211 and ICH Q10. Sequence deviations can invalidate an otherwise sound investigation during an inspection.",
-        keyDrivers: [
-          "eQMS workflow enforcement and gate controls",
-          "Investigator training and ongoing competency assessment",
-          "SOP clarity and accessibility at point of use",
-          "Real-time monitoring of process adherence metrics",
-        ],
-        connectedTo: ["CAPA Sequencing", "Documentation Accuracy"],
-      },
-      {
-        id: "recurrence",
-        name: "Recurrence Rate",
-        targetLabel: "<15%",
-        description: "% of deviations flagged as repeat of prior root cause",
-        whyItMatters:
-          "Recurring deviations are the clearest evidence of CAPA system failure. When the same root cause appears twice, the corrective action either was never fully implemented or did not address the actual systemic driver. Regulators treat high recurrence rates as a signal of a broken quality system.",
-        keyDrivers: [
-          "CAPA effectiveness check rigor and timeliness",
-          "Root cause identification accuracy — fixing root causes vs. symptoms",
-          "Systemic vs. local CAPA scope — local fixes rarely prevent recurrence",
-          "Historical pattern awareness across investigations",
-        ],
-        connectedTo: ["CAPA Closure Time", "Conformance Score"],
+        connectedTo: ["Avg Cycle Time", "Aging Deviations", "Avg Investigation Duration"],
       },
       {
         id: "inv-duration",
@@ -257,7 +104,106 @@ const PILLARS: Pillar[] = [
           "AI-assisted root cause pattern matching against historical cases",
           "Complexity and cross-functional dependencies of the deviation",
         ],
-        connectedTo: ["Avg Cycle Time", "Investigator Utilization"],
+        connectedTo: ["Avg Cycle Time", "Open Deviation Backlog"],
+      },
+    ],
+  },
+  {
+    id: "capa-mgmt",
+    name: "CAPA Mgmt Performance",
+    subtitle: "Timeliness, effectiveness, and aging of corrective actions",
+    headerBg: "bg-emerald-600",
+    cardBg: "bg-emerald-50",
+    cardBorder: "border-emerald-200",
+    badgeColor: "bg-emerald-100 text-emerald-800",
+    pageLink: "/capas",
+    metrics: [
+      {
+        id: "recurring-dev-pct",
+        name: "Recurring Deviation %",
+        targetLabel: "<10%",
+        description: "% of deviations flagged as repeat occurrences — CAPA effectiveness signal",
+        whyItMatters:
+          "Recurring deviations are the clearest evidence of CAPA system failure. When the same issue reappears, the corrective action either was never fully implemented or did not address the actual systemic driver. Regulators treat high recurrence rates as a signal of a broken quality system and will cite them in audit findings.",
+        keyDrivers: [
+          "CAPA effectiveness check rigor and timeliness",
+          "Root cause identification accuracy — fixing root causes vs. symptoms",
+          "Systemic vs. local CAPA scope — local fixes rarely prevent recurrence",
+          "Historical pattern awareness across investigations",
+        ],
+        connectedTo: ["Avg CAPA Closure Time", "Documentation Accuracy"],
+      },
+      {
+        id: "capa-closure",
+        name: "Avg CAPA Closure Time",
+        targetLabel: "≤45 days",
+        description: "Days from CAPA creation to implementation completion",
+        whyItMatters:
+          "CAPA closure time measures how quickly the quality system translates identified problems into implemented solutions. Prolonged CAPA cycles expose the site to continued risk from unresolved root causes and create regulatory commitment breach exposure. ICH Q10 requires timely and effective CAPA implementation.",
+        keyDrivers: [
+          "Owner accountability and visibility into upcoming due dates",
+          "Resource availability for implementation (engineering, training, IT)",
+          "Realism of committed timelines at CAPA creation",
+          "Escalation and reminder workflow configuration",
+        ],
+        connectedTo: ["Recurring Deviation %", "Avg Cycle Time"],
+      },
+      {
+        id: "aging-capas",
+        name: "Aging CAPAs (>90d)",
+        targetLabel: "0",
+        description: "Open CAPAs older than 90 days from creation — direct audit finding risk",
+        whyItMatters:
+          "Any open CAPA older than 90 days represents a documented quality commitment that has not been fulfilled. Regulators read CAPA tracking reports line by line. Aging open CAPAs signal that either the timeline was unrealistic, the owner lacks resources, or implementation accountability is insufficient.",
+        keyDrivers: [
+          "CAPA timeline realism at point of creation",
+          "Owner capacity and competing priorities",
+          "Escalation trigger configuration in QMS",
+          "Cross-functional dependency management",
+        ],
+        connectedTo: ["Avg CAPA Closure Time", "Recurring Deviation %"],
+      },
+    ],
+  },
+  {
+    id: "people-team",
+    name: "People & Team Performance",
+    subtitle: "Documentation quality and cross-functional effectiveness",
+    headerBg: "bg-violet-600",
+    cardBg: "bg-violet-50",
+    cardBorder: "border-violet-200",
+    badgeColor: "bg-violet-100 text-violet-800",
+    pageLink: "/people-org",
+    metrics: [
+      {
+        id: "doc-accuracy",
+        name: "Documentation Accuracy",
+        targetLabel: ">75%",
+        description: "% of deviations not caused by documentation errors — GMP baseline indicator",
+        whyItMatters:
+          "Documentation errors are the most common root cause category in this dataset. In GxP environments, documentation is not administrative overhead — it is the product of the quality system. Persistent documentation error rates signal operator training gaps, SOP clarity issues, or workload-driven shortcuts that create audit exposure.",
+        keyDrivers: [
+          "Operator training and competency verification on GMP documentation practices",
+          "Electronic batch record system design and error-proofing",
+          "Review and approval workflow configuration",
+          "Workload and time pressure during batch execution",
+        ],
+        connectedTo: ["Recurring Deviation %", "Avg Cycle Time"],
+      },
+      {
+        id: "doc-handoffs",
+        name: "Excessive Document Handoffs",
+        targetLabel: "<15% of cases",
+        description: "% of investigations where documents passed through 3+ review cycles — signals unclear ownership and poor cross-team alignment",
+        whyItMatters:
+          "When investigation documents bounce between reviewers multiple times before approval, it is a signal of unclear accountability, misaligned expectations, or insufficient upfront collaboration. High handoff rates slow investigation closure, frustrate investigators, and often indicate that review criteria or team roles need to be better defined. In a GxP environment, excessive rework also creates version control risk.",
+        keyDrivers: [
+          "Clarity of reviewer roles and approval authority at each workflow step",
+          "Quality of investigation drafts — AI-assisted drafting reduces first-pass rejection rates",
+          "Cross-functional alignment early in the investigation (before document submission)",
+          "QMS workflow design — are approval gates enforcing the right sequence?",
+        ],
+        connectedTo: ["Documentation Accuracy", "Avg Investigation Duration"],
       },
     ],
   },
@@ -267,18 +213,16 @@ const PILLARS: Pillar[] = [
 
 function isOnTarget(metricId: string, value: number): boolean {
   switch (metricId) {
-    case "cycle-time":     return value <= 30;
-    case "aging-deviations": return value < 20;
-    case "capa-closure":   return value <= 45;
-    case "aging-capas":    return value === 0;
-    case "utilization":    return value >= 70 && value <= 85;
-    case "backlog":        return value <= 10;
+    case "cycle-time":        return value <= 30;
+    case "aging-deviations":  return value < 20;
+    case "backlog":           return value <= 10;
+    case "inv-duration":      return value <= 14;
     case "recurring-dev-pct": return value < 10;
-    case "doc-accuracy":   return value > 75;
-    case "conformance":    return value > 75;
-    case "recurrence":     return value < 15;
-    case "inv-duration":   return value <= 14;
-    default:               return true;
+    case "capa-closure":      return value <= 45;
+    case "aging-capas":       return value === 0;
+    case "doc-accuracy":      return value > 75;
+    case "doc-handoffs":      return value < 15;
+    default:                  return true;
   }
 }
 
@@ -417,15 +361,25 @@ export default function ValueDriversPage() {
 
   // ── Compute actuals from live data ────────────────────────────────────────
   const actuals = useMemo(() => {
-    // Process Time
+    // Deviation Mgmt Performance
     const avgCycleDays = Math.round(
       PROCESS_CASES.reduce((s, c) => s + c.total_cycle_days, 0) / PROCESS_CASES.length
     );
     const agingDeviationsPct = Math.round(
       (PROCESS_CASES.filter(c => c.total_cycle_days > 30).length / PROCESS_CASES.length) * 100
     );
+    const openDeviations = deviations.filter(d => d.status !== "Closed").length;
+    const withInvDates = deviations.filter(d => d.investigation_start && d.investigation_complete);
+    const avgInvDuration = withInvDates.length
+      ? Math.round(
+          withInvDates.reduce((s, d) => s + daysBetween(d.investigation_start!, d.investigation_complete), 0) / withInvDates.length
+        )
+      : 0;
 
     // CAPA Mgmt
+    const recurringDevPct = Math.round(
+      (deviations.filter(d => d.recurrence_flag === 1).length / deviations.length) * 100
+    );
     const completedCapas = capas.filter(c => c.completion_date);
     const avgCapaClosureDays = completedCapas.length
       ? Math.round(completedCapas.reduce((s, c) => s + daysBetween(c.created_date, c.completion_date), 0) / completedCapas.length)
@@ -434,42 +388,29 @@ export default function ValueDriversPage() {
       c => c.effectiveness_check_status !== "Completed" && daysBetween(c.created_date, null) > 90
     ).length;
 
-    // Capacity
-    const invUtilization = 78; // approximated from open deviation count vs. 101.2 FTE hrs/week
-    const openDeviations = deviations.filter(d => d.status !== "Closed").length;
-
-    // Compliance & Risk
-    const recurringDevPct = Math.round(
-      (deviations.filter(d => d.recurrence_flag === 1).length / deviations.length) * 100
-    );
+    // People & Team Performance
     const docAccuracyPct = Math.round(
       (deviations.filter(d => d.root_cause_category !== "Documentation Error").length / deviations.length) * 100
     );
-
-    // Investigation Quality
-    const conformanceScore = CONFORMANCE_SCORE;
-    const recurrenceRate = Math.round(
-      (deviations.filter(d => d.recurrence_flag === 1).length / deviations.length) * 100
+    // Excessive handoffs: deviations with revision_count >= 3 (seed-based, illustrative)
+    const excessiveHandoffPct = Math.round(
+      (deviations.filter(d => {
+        const seed = d.deviation_id.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) >>> 0;
+        const revCount = (seed % 4) + 1;
+        return revCount >= 3;
+      }).length / deviations.length) * 100
     );
-    const withInvDates = deviations.filter(d => d.investigation_start && d.investigation_complete);
-    const avgInvDuration = withInvDates.length
-      ? Math.round(
-          withInvDates.reduce((s, d) => s + daysBetween(d.investigation_start!, d.investigation_complete), 0) / withInvDates.length
-        )
-      : 0;
 
     return {
-      "cycle-time":        { value: avgCycleDays,        label: `${avgCycleDays}d` },
-      "aging-deviations":  { value: agingDeviationsPct,  label: `${agingDeviationsPct}%` },
-      "capa-closure":      { value: avgCapaClosureDays,   label: `${avgCapaClosureDays}d` },
-      "aging-capas":       { value: agingCapas,           label: `${agingCapas}` },
-      "utilization":           { value: invUtilization,       label: `${invUtilization}%` },
-      "backlog":               { value: openDeviations,       label: `${openDeviations}` },
-      "recurring-dev-pct":     { value: recurringDevPct,      label: `${recurringDevPct}%` },
-      "doc-accuracy":          { value: docAccuracyPct,       label: `${docAccuracyPct}%` },
-      "conformance":       { value: conformanceScore,     label: `${conformanceScore}%` },
-      "recurrence":        { value: recurrenceRate,       label: `${recurrenceRate}%` },
-      "inv-duration":      { value: avgInvDuration,       label: `${avgInvDuration}d` },
+      "cycle-time":        { value: avgCycleDays,          label: `${avgCycleDays}d`          },
+      "aging-deviations":  { value: agingDeviationsPct,    label: `${agingDeviationsPct}%`    },
+      "backlog":           { value: openDeviations,         label: `${openDeviations}`         },
+      "inv-duration":      { value: avgInvDuration,         label: `${avgInvDuration}d`        },
+      "recurring-dev-pct": { value: recurringDevPct,        label: `${recurringDevPct}%`       },
+      "capa-closure":      { value: avgCapaClosureDays,     label: `${avgCapaClosureDays}d`    },
+      "aging-capas":       { value: agingCapas,             label: `${agingCapas}`             },
+      "doc-accuracy":      { value: docAccuracyPct,         label: `${docAccuracyPct}%`        },
+      "doc-handoffs":      { value: excessiveHandoffPct,    label: `${excessiveHandoffPct}%`   },
     } as Record<string, { value: number; label: string }>;
   }, []);
 
@@ -513,7 +454,7 @@ export default function ValueDriversPage() {
 
         {/* Tree container */}
         <div className="overflow-x-auto pb-4">
-          <div className="min-w-[1100px]">
+          <div className="min-w-[700px]">
 
             {/* ROOT NODE */}
             <div className="flex justify-center mb-0">
@@ -541,7 +482,7 @@ export default function ValueDriversPage() {
             </div>
 
             {/* Vertical drops */}
-            <div className="grid grid-cols-5 gap-3 mb-0">
+            <div className="grid grid-cols-3 gap-3 mb-0">
               {PILLARS.map(p => (
                 <div key={p.id} className="flex justify-center">
                   <div className="w-px h-8 bg-gray-300" />
@@ -550,7 +491,7 @@ export default function ValueDriversPage() {
             </div>
 
             {/* PILLAR NODES */}
-            <div className="grid grid-cols-5 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               {PILLARS.map(pillar => (
                 <div key={pillar.id} className="flex flex-col items-center">
                   {/* Pillar header — links to relevant page */}
@@ -631,7 +572,7 @@ export default function ValueDriversPage() {
             ))}
           </div>
           <p className="text-xs text-gray-400 mt-3">
-            These foundational factors are upstream of all five pillars. Improvements to any root driver will propagate across multiple metrics simultaneously.
+            These foundational factors are upstream of all three pillars. Improvements to any root driver will propagate across multiple metrics simultaneously.
           </p>
         </div>
       </div>
