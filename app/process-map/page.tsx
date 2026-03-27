@@ -100,25 +100,6 @@ function ProcessGraph({ selectedVariant }: { selectedVariant: number | null }) {
         );
       })}
 
-      {/* ── Rework loop: CAPA Implemented → Re-investigation (right side) ── */}
-      {reworkCount > 0 && (
-        <g opacity={selectedVariant && selectedVariant !== 3 ? 0.15 : 1}>
-          <path
-            d={`M ${CENTER_X + NODE_W} ${380 + NODE_H / 2}
-                Q ${REWORK_X + 80} ${430}
-                  ${REWORK_X + 60} ${430}
-                Q ${REWORK_X + 10} ${430}
-                  ${REWORK_X} ${380 + NODE_H / 2}`}
-            fill="none" stroke="#dc2626" strokeWidth={2.5} strokeDasharray="5,3"
-            markerEnd="url(#arrowRed)"
-          />
-          <rect x={REWORK_X - 5} y={408} width={92} height={18} rx={4} fill="#fee2e2" />
-          <text x={REWORK_X - 1} y={421} fontSize={9} fill="#991b1b" fontWeight="600">
-            ↺ Re-investigation
-          </text>
-          <text x={REWORK_X + 7} y={433} fontSize={8} fill="#dc2626">{reworkCount} deviations</text>
-        </g>
-      )}
 
       {/* ── No-CAPA shortcut: Investigation Complete → QA Review ── */}
       {noCapaCount > 0 && (
