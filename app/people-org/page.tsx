@@ -398,7 +398,6 @@ export default function PeopleOrgPage() {
                 <DataCallout label="Investigator utilization" value={`${BASELINE_UTIL}%`} sub="target: <80%" status="warn" />
                 <DataCallout label="Utilization with AI" value={`${AI_UTIL}%`} sub="Digital Twin projection" status="ok" />
                 <DataCallout label="Capacity released" value={`${FTE_FREED} FTE`} sub="returned to organization — available for batch disposition, APQR, complaints handling, or other priorities" status="ok" />
-                <DataCallout label="Avg investigation" value={`${AVG_INV_DAYS}d → ${AI_INV_DAYS}d`} sub={`target: ≤${INV_TARGET_DAYS}d`} status="ok" />
               </div>
             </div>
           </div>
@@ -600,33 +599,8 @@ export default function PeopleOrgPage() {
               </div>
             </div>
 
-            {/* Right: data callouts */}
-            <div className="space-y-2">
-              <DataCallout
-                label="CAPA sequencing issues"
-                value={`${capaSequencingViolations}`}
-                sub="CAPAs created before investigation complete"
-                status={capaSequencingViolations > 0 ? "warn" : "ok"}
-              />
-              <DataCallout
-                label="Escalated deviations"
-                value={`${escalationCount}`}
-                sub="routed to CAPA Review Board"
-                status="neutral"
-              />
-              <DataCallout
-                label="Overdue CAPAs"
-                value={`${agingCapas}`}
-                sub="beyond 90-day target"
-                status={agingCapas > 0 ? "warn" : "ok"}
-              />
-              <DataCallout
-                label="Recurring deviation rate"
-                value={`${recurringPct}%`}
-                sub="primary effectiveness measure"
-                status={recurringPct >= 15 ? "warn" : "ok"}
-              />
-            </div>
+            {/* Right: empty */}
+            <div />
           </div>
         </div>
 
