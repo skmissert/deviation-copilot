@@ -227,7 +227,7 @@ const PILLARS: Pillar[] = [
           "SOP clarity and accessibility at point of use",
           "Real-time monitoring of process adherence metrics",
         ],
-        connectedTo: ["CAPA Sequencing", "Right First Time", "Documentation Accuracy"],
+        connectedTo: ["CAPA Sequencing", "Documentation Accuracy"],
       },
       {
         id: "recurrence",
@@ -242,7 +242,7 @@ const PILLARS: Pillar[] = [
           "Systemic vs. local CAPA scope — local fixes rarely prevent recurrence",
           "Historical pattern awareness across investigations",
         ],
-        connectedTo: ["Right First Time", "CAPA Closure Time", "Conformance Score"],
+        connectedTo: ["CAPA Closure Time", "Conformance Score"],
       },
       {
         id: "inv-duration",
@@ -257,7 +257,7 @@ const PILLARS: Pillar[] = [
           "AI-assisted root cause pattern matching against historical cases",
           "Complexity and cross-functional dependencies of the deviation",
         ],
-        connectedTo: ["Avg Cycle Time", "Investigator Utilization", "Right First Time"],
+        connectedTo: ["Avg Cycle Time", "Investigator Utilization"],
       },
     ],
   },
