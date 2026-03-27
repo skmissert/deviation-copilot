@@ -24,7 +24,7 @@ const LEGEND = [
 const TIME_ALLOC: { label: string; today: number; future: number; cat: "evergreen"|"emerging"|"deprioritized" }[] = [
   { label: "Manual documentation & data entry", today: 25, future:  5, cat: "deprioritized" },
   { label: "System data entry (Veeva)",          today: 15, future:  5, cat: "deprioritized" },
-  { label: "Rework & iteration on root cause",   today: 25, future:  5, cat: "deprioritized" },
+  { label: "Rework & iteration on root cause",   today: 20, future:  5, cat: "deprioritized" },
   { label: "Root cause investigation",           today: 15, future: 25, cat: "evergreen"     },
   { label: "Review & sign-off",                  today: 10, future: 20, cat: "evergreen"     },
   { label: "CAPA coordination",                  today:  5, future: 15, cat: "evergreen"     },
@@ -248,101 +248,183 @@ export default function PeopleOrgPage() {
             </div>
             <div className="grid grid-cols-[1fr_200px] gap-6 items-start">
 
-              {/* Time allocation chart — 3 bars: Today | AI Unlock | Future */}
-              <div className="space-y-1.5">
+              {/* Time allocation chart — 3 bars: Today | After AI | Future */}
+              <div className="space-y-0">
 
                 {/* Legend */}
-                <div className="flex gap-4 mb-2">
-                  {(["evergreen","emerging","deprioritized"] as const).map(cat => (
-                    <span key={cat} className="flex items-center gap-1.5 text-[10px] text-gray-600">
-                      <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ backgroundColor: ALLOC_COLORS[cat].future }} />
-                      {ALLOC_COLORS[cat].label}
+                <div className="flex flex-wrap gap-3 mb-3">
+                  {[
+                    { color: "#16a34a", label: "Evergreen" },
+                    { color: "#2563eb", label: "Emerging" },
+                    { color: "#9ca3af", label: "Deprioritized" },
+                    { color: "#f59e0b", label: "AI Freed / Returned to Org" },
+                  ].map(({ color, label }) => (
+                    <span key={label} className="flex items-center gap-1.5 text-[10px] text-gray-600">
+                      <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ backgroundColor: color }} />
+                      {label}
                     </span>
                   ))}
-                  <span className="flex items-center gap-1.5 text-[10px] text-gray-600">
-                    <span className="w-2.5 h-2.5 rounded-sm inline-block bg-amber-400" />
-                    AI Unlocked
-                  </span>
                 </div>
 
-                {/* BAR 1: Today */}
+                {/* BAR 1 — Today */}
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-bold uppercase tracking-widest w-20 shrink-0 text-gray-400">Today</span>
-                  <div className="flex-1 flex h-9 rounded overflow-hidden">
-                    {TIME_ALLOC.filter(a => a.today > 0).map(a => (
-                      <div key={a.label} title={`${a.label}: ${a.today}%`}
-                        className="flex items-center justify-center overflow-hidden"
-                        style={{ width: `${a.today}%`, backgroundColor: ALLOC_COLORS[a.cat].today }}>
-                        {a.today >= 5 && <span className="text-[9px] font-bold text-white drop-shadow-sm">{a.today}%</span>}
+                  <div className="w-24 shrink-0 text-right pr-1">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Today</span>
+                  </div>
+                  <div className="flex-1 flex h-10 rounded overflow-hidden border border-gray-200">
+                    {/* Manual doc 25% — grey */}
+                    <div title="Manual documentation & data entry: 25%" style={{ flex: 25, backgroundColor: "#d1d5db" }}
+                      className="flex items-center justify-center border-r border-gray-300 overflow-hidden">
+                      <span className="text-[9px] font-bold text-gray-600">25%</span>
+                    </div>
+                    {/* Veeva 15% — grey */}
+                    <div title="System data entry (Veeva): 15%" style={{ flex: 15, backgroundColor: "#d1d5db" }}
+                      className="flex items-center justify-center border-r border-gray-300 overflow-hidden">
+                      <span className="text-[9px] font-bold text-gray-600">15%</span>
+                    </div>
+                    {/* Rework 20% — grey */}
+                    <div title="Rework & iteration on root cause: 20%" style={{ flex: 20, backgroundColor: "#d1d5db" }}
+                      className="flex items-center justify-center border-r border-white/50 overflow-hidden">
+                      <span className="text-[9px] font-bold text-gray-600">20%</span>
+                    </div>
+                    {/* Root cause 15% — green */}
+                    <div title="Root cause investigation: 15%" style={{ flex: 15, backgroundColor: "#86efac" }}
+                      className="flex items-center justify-center border-r border-green-200 overflow-hidden">
+                      <span className="text-[9px] font-bold text-green-800">15%</span>
+                    </div>
+                    {/* Review 10% — green */}
+                    <div title="Review & sign-off: 10%" style={{ flex: 10, backgroundColor: "#86efac" }}
+                      className="flex items-center justify-center border-r border-green-200 overflow-hidden">
+                      <span className="text-[9px] font-bold text-green-800">10%</span>
+                    </div>
+                    {/* CAPA coord 5% — green */}
+                    <div title="CAPA coordination: 5%" style={{ flex: 5, backgroundColor: "#86efac" }}
+                      className="flex items-center justify-center border-r border-green-200 overflow-hidden" />
+                    {/* Cross-func 5% — blue */}
+                    <div title="Cross-functional alignment: 5%" style={{ flex: 5, backgroundColor: "#93c5fd" }}
+                      className="flex items-center justify-center overflow-hidden" />
+                  </div>
+                </div>
+
+                {/* CONNECTOR 1 — grey (60%) → amber (60%) same width, dotted outline */}
+                <div className="flex gap-3">
+                  <div className="w-24 shrink-0" />
+                  <div className="flex-1">
+                    <svg viewBox="0 0 100 8" preserveAspectRatio="none" width="100%" height="8">
+                      <polygon points="0,0 63.2,0 63.2,8 0,8" fill="#fef3c7" opacity="0.9" />
+                      <line x1="63.2" y1="0" x2="63.2" y2="8" stroke="#f59e0b" strokeWidth="1" strokeDasharray="2,1.5" />
+                      <line x1="0" y1="0" x2="0" y2="8" stroke="#f59e0b" strokeWidth="0.6" strokeDasharray="2,1.5" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* BAR 2 — After AI Assistance */}
+                <div className="flex items-start gap-3">
+                  <div className="w-24 shrink-0 text-right pr-1 pt-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 leading-tight">After AI<br/>Assist.</span>
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex h-10 rounded overflow-hidden border border-amber-300">
+                      {/* 45% freed — dark amber */}
+                      <div title="45% freed — returned to organization" style={{ flex: 45, backgroundColor: "#f59e0b" }}
+                        className="flex items-center justify-center border-r border-amber-400 overflow-hidden px-1">
+                        <span className="text-[9px] font-bold text-amber-900 text-center leading-tight whitespace-nowrap">45% freed ↑ org</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* CONNECTOR 1: Today deprioritised (65%) → Unlock freed (45%) */}
-                <div className="flex gap-3 items-center">
-                  <div className="w-20 shrink-0 flex justify-end pr-1">
-                    <span className="text-[9px] text-amber-600 font-semibold">45% freed ↓</span>
-                  </div>
-                  <svg viewBox="0 0 100 12" preserveAspectRatio="none" width="100%" height="12" className="flex-1">
-                    <polygon points="0,0 65,0 45,12 0,12" fill="#fef3c7" />
-                    <line x1="65" y1="0" x2="45" y2="12" stroke="#f59e0b" strokeWidth="0.8" strokeDasharray="2,1.5" />
-                    <line x1="0" y1="0" x2="0" y2="12" stroke="#f59e0b" strokeWidth="0.5" strokeDasharray="2,1.5" />
-                  </svg>
-                </div>
-
-                {/* BAR 2: AI Productivity Unlock */}
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-bold uppercase tracking-widest w-20 shrink-0 text-amber-500 leading-tight">AI Unlock</span>
-                  <div className="flex-1 flex h-9 rounded overflow-hidden">
-                    <div title="Manual documentation freed: 20%" className="flex items-center justify-center overflow-hidden"
-                      style={{ width: "20%", backgroundColor: "#f59e0b" }}>
-                      <span className="text-[9px] font-bold text-white drop-shadow-sm">−20%</span>
-                    </div>
-                    <div title="System data entry freed: 10%" className="flex items-center justify-center overflow-hidden"
-                      style={{ width: "10%", backgroundColor: "#fbbf24" }}>
-                      <span className="text-[9px] font-bold text-amber-900">−10%</span>
-                    </div>
-                    <div title="Rework & iteration freed: 15%" className="flex items-center justify-center overflow-hidden"
-                      style={{ width: "15%", backgroundColor: "#fcd34d" }}>
-                      <span className="text-[9px] font-bold text-amber-900">−15%</span>
-                    </div>
-                    <div className="flex items-center justify-center overflow-hidden flex-1"
-                      style={{ backgroundColor: "#f3f4f6" }}>
-                      <span className="text-[9px] text-gray-400">55% retained</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* CONNECTOR 2: Unlock freed (45%) reinvested → Future value-add expands */}
-                <div className="flex gap-3 items-center">
-                  <div className="w-20 shrink-0 flex justify-end pr-1">
-                    <span className="text-[9px] text-green-600 font-semibold">↓ reinvested</span>
-                  </div>
-                  <svg viewBox="0 0 100 12" preserveAspectRatio="none" width="100%" height="12" className="flex-1">
-                    <polygon points="0,0 45,0 15,12 0,12" fill="#dcfce7" />
-                    <polygon points="45,0 100,0 100,12 15,12" fill="#f0fdf4" />
-                    <line x1="45" y1="0" x2="15" y2="12" stroke="#16a34a" strokeWidth="0.8" strokeDasharray="2,1.5" />
-                    <line x1="0" y1="0" x2="0" y2="12" stroke="#16a34a" strokeWidth="0.5" strokeDasharray="2,1.5" />
-                  </svg>
-                </div>
-
-                {/* BAR 3: Future */}
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-bold uppercase tracking-widest w-20 shrink-0 text-green-600">Future</span>
-                  <div className="flex-1 flex h-9 rounded overflow-hidden">
-                    {TIME_ALLOC.filter(a => a.future > 0).map(a => (
-                      <div key={a.label} title={`${a.label}: ${a.future}%`}
-                        className="flex items-center justify-center overflow-hidden"
-                        style={{ width: `${a.future}%`, backgroundColor: ALLOC_COLORS[a.cat].future }}>
-                        {a.future >= 5 && <span className="text-[9px] font-bold text-white drop-shadow-sm">{a.future}%</span>}
+                      {/* 15% retained deprioritized — light amber */}
+                      <div title="15% some manual work remains" style={{ flex: 15, backgroundColor: "#fcd34d" }}
+                        className="flex items-center justify-center border-r border-amber-200 overflow-hidden px-0.5">
+                        <span className="text-[9px] font-semibold text-amber-800 text-center leading-tight whitespace-nowrap">15% remain</span>
                       </div>
-                    ))}
+                      {/* Root cause 15% — green */}
+                      <div title="Root cause investigation: 15%" style={{ flex: 15, backgroundColor: "#86efac" }}
+                        className="flex items-center justify-center border-r border-green-200 overflow-hidden">
+                        <span className="text-[9px] font-bold text-green-800">15%</span>
+                      </div>
+                      {/* Review 10% — green */}
+                      <div title="Review & sign-off: 10%" style={{ flex: 10, backgroundColor: "#86efac" }}
+                        className="flex items-center justify-center border-r border-green-200 overflow-hidden">
+                        <span className="text-[9px] font-bold text-green-800">10%</span>
+                      </div>
+                      {/* CAPA 5% — green */}
+                      <div title="CAPA coordination: 5%" style={{ flex: 5, backgroundColor: "#86efac" }}
+                        className="flex items-center justify-center border-r border-green-200 overflow-hidden" />
+                      {/* Cross-func 5% — blue */}
+                      <div title="Cross-functional alignment: 5%" style={{ flex: 5, backgroundColor: "#93c5fd" }}
+                        className="flex items-center justify-center overflow-hidden" />
+                    </div>
+                    {/* Annotation below bar 2 */}
+                    <div className="flex text-[9px] text-gray-400 leading-tight">
+                      <div style={{ flex: 45 }} className="text-amber-700 font-semibold">↑ returned to org</div>
+                      <div style={{ flex: 15 }} className="text-amber-600">some manual remains</div>
+                      <div style={{ flex: 35 }} className="text-gray-400">unchanged</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CONNECTOR 2 — amber 63.2% → amber 45%, tapering */}
+                <div className="flex gap-3">
+                  <div className="w-24 shrink-0" />
+                  <div className="flex-1">
+                    <svg viewBox="0 0 100 10" preserveAspectRatio="none" width="100%" height="10">
+                      <polygon points="0,0 63.2,0 45,10 0,10" fill="#fef3c7" opacity="0.9" />
+                      <line x1="63.2" y1="0" x2="45" y2="10" stroke="#f59e0b" strokeWidth="1" strokeDasharray="2,1.5" />
+                      <line x1="0" y1="0" x2="0" y2="10" stroke="#f59e0b" strokeWidth="0.6" strokeDasharray="2,1.5" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* BAR 3 — Future State */}
+                <div className="flex items-start gap-3">
+                  <div className="w-24 shrink-0 text-right pr-1 pt-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-green-600">Future</span>
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex h-10 rounded overflow-hidden border border-gray-200">
+                      {/* 45% freed — amber, returned to org */}
+                      <div title="45% freed — returned to broader organization" style={{ flex: 45, backgroundColor: "#fbbf24" }}
+                        className="flex items-center justify-center border-r border-amber-300 overflow-hidden px-1">
+                        <span className="text-[9px] font-bold text-amber-900 text-center leading-tight whitespace-nowrap">45% → org</span>
+                      </div>
+                      {/* 5% manual — grey (some remains) */}
+                      <div title="Manual documentation: 5% remains" style={{ flex: 5, backgroundColor: "#d1d5db" }}
+                        className="flex items-center justify-center border-r border-gray-300 overflow-hidden" />
+                      {/* 5% Veeva — grey */}
+                      <div title="System data entry: 5% remains" style={{ flex: 5, backgroundColor: "#d1d5db" }}
+                        className="flex items-center justify-center border-r border-gray-300 overflow-hidden" />
+                      {/* 5% rework — grey */}
+                      <div title="Rework: 5% remains" style={{ flex: 5, backgroundColor: "#d1d5db" }}
+                        className="flex items-center justify-center border-r border-white/50 overflow-hidden" />
+                      {/* Root cause 15% — green */}
+                      <div title="Root cause investigation: 15%" style={{ flex: 15, backgroundColor: "#16a34a" }}
+                        className="flex items-center justify-center border-r border-green-700 overflow-hidden">
+                        <span className="text-[9px] font-bold text-white">15%</span>
+                      </div>
+                      {/* Review 10% — green */}
+                      <div title="Review & sign-off: 10%" style={{ flex: 10, backgroundColor: "#16a34a" }}
+                        className="flex items-center justify-center border-r border-green-700 overflow-hidden">
+                        <span className="text-[9px] font-bold text-white">10%</span>
+                      </div>
+                      {/* CAPA 5% — green */}
+                      <div title="CAPA coordination: 5%" style={{ flex: 5, backgroundColor: "#16a34a" }}
+                        className="flex items-center justify-center border-r border-green-700 overflow-hidden" />
+                      {/* Cross-func 5% — blue */}
+                      <div title="Cross-functional alignment: 5%" style={{ flex: 5, backgroundColor: "#2563eb" }}
+                        className="flex items-center justify-center border-r border-blue-700 overflow-hidden" />
+                      {/* AI validation 5% — blue */}
+                      <div title="AI output validation: 5%" style={{ flex: 5, backgroundColor: "#2563eb" }}
+                        className="flex items-center justify-center overflow-hidden" />
+                    </div>
+                    {/* Annotation below bar 3 */}
+                    <div className="flex text-[9px] leading-tight">
+                      <div style={{ flex: 45 }} className="text-amber-700 font-semibold">Freed — other QA workflows,<br/>APQR, batch disposition</div>
+                      <div style={{ flex: 15 }} className="text-gray-400 text-center">15% manual<br/>remains</div>
+                      <div style={{ flex: 40 }} className="text-green-700 text-right">40% reinvested<br/>in value-add</div>
+                    </div>
                   </div>
                 </div>
 
                 {/* Activity key */}
-                <div className="grid grid-cols-3 gap-x-4 gap-y-0.5 pt-1">
+                <div className="grid grid-cols-3 gap-x-4 gap-y-0.5 pt-2 pb-1">
                   {TIME_ALLOC.filter(a => a.today > 0 || a.future > 0).map(a => (
                     <div key={a.label} className="flex items-center gap-1">
                       <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: ALLOC_COLORS[a.cat].future }} />
@@ -351,25 +433,25 @@ export default function PeopleOrgPage() {
                   ))}
                 </div>
 
-                {/* FTE 3-state bar */}
+                {/* FTE flow bar */}
                 <div className="bg-gray-100 rounded-lg p-2.5 flex items-center gap-2 flex-wrap mt-1">
                   <div className="bg-gray-400 rounded px-2 py-1 text-white text-xs font-semibold whitespace-nowrap">
                     Today: 1.0 FTE
                   </div>
                   <ArrowRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                   <div className="rounded px-2 py-1 text-xs font-semibold whitespace-nowrap" style={{ backgroundColor: "#f59e0b", color: "#78350f" }}>
-                    0.5 FTE freed by AI
+                    AI frees 0.5 FTE
                   </div>
                   <ArrowRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                  <div className="bg-green-600 rounded px-2 py-1 text-white text-xs font-semibold whitespace-nowrap">
-                    0.5 FTE → complex cases &amp; AI oversight
+                  <div className="rounded px-2 py-1 text-xs font-semibold whitespace-nowrap bg-amber-100 border border-amber-300 text-amber-800">
+                    0.5 FTE returned to organization
                   </div>
                 </div>
 
                 {/* Bottom callout */}
-                <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 mt-1">
                   <p className="text-[11px] text-green-800 font-medium">
-                    AI unlocks ~45% of investigator time from manual tasks — reinvested into judgment, oversight, and process improvement
+                    AI returns ~45% of investigator time to the organization — capacity that funds the next reinvention wave.
                   </p>
                 </div>
               </div>
@@ -378,7 +460,7 @@ export default function PeopleOrgPage() {
               <div className="space-y-2">
                 <DataCallout label="Investigator utilization" value={`${BASELINE_UTIL}%`} sub="target: <80%" status="warn" />
                 <DataCallout label="Utilization with AI" value={`${AI_UTIL}%`} sub="Digital Twin projection" status="ok" />
-                <DataCallout label="Capacity released" value={`${FTE_FREED} FTE`} sub="redeployed to complex cases" status="ok" />
+                <DataCallout label="Capacity released" value={`${FTE_FREED} FTE`} sub="returned to organization — available for batch disposition, APQR, complaints handling, or other priorities" status="ok" />
                 <DataCallout label="Avg investigation" value={`${AVG_INV_DAYS}d → ${AI_INV_DAYS}d`} sub={`target: ≤${INV_TARGET_DAYS}d`} status="ok" />
               </div>
             </div>
