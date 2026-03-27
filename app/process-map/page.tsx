@@ -222,7 +222,6 @@ export default function ProcessMapPage() {
 
   const happyPathRate = VARIANTS.find(v => v.is_happy_path)?.pct ?? 0;
   const avgCycleTime  = Math.round(PROCESS_CASES.reduce((s, c) => s + c.total_cycle_days, 0) / PROCESS_CASES.length);
-  const reworkRate    = Math.round((PROCESS_CASES.filter(c => c.has_rework).length / PROCESS_CASES.length) * 100);
 
   // Root Cause Patterns data
   const RC_CATEGORY_MAP: Record<string, string> = {
@@ -332,12 +331,12 @@ export default function ProcessMapPage() {
         const recurringDevPct = Math.round((deviations.filter(d => d.recurrence_flag === 1).length / deviations.length) * 100);
         const recurringColor = recurringDevPct >= 15 ? "text-red-700" : recurringDevPct >= 10 ? "text-amber-700" : "text-green-700";
         return (
-          <div className="grid grid-cols-5 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             {[
               { label: "Deviations Analyzed", value: PROCESS_CASES.length, sub: "deviations mined", color: "text-gray-900" },
               { label: "Path with CAPA", value: "15%", sub: "formal CAPA required", color: "text-amber-700" },
               { label: "% Approved within 30d", value: `${Math.round((PROCESS_CASES.filter(c => c.total_cycle_days <= 30).length / PROCESS_CASES.length) * 100)}%`, sub: "closed within 30 days", color: "text-gray-900" },
-              { label: "Rework Rate", value: `${reworkRate}%`, sub: "re-investigation required", color: reworkRate > 10 ? "text-red-700" : "text-green-700" },
+
               { label: "Recurring Deviation %", value: `${recurringDevPct}%`, sub: "target: <10%", color: recurringColor },
             ].map(k => (
               <div key={k.label} className="bg-white rounded-lg border border-gray-200 p-3">
