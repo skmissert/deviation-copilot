@@ -39,11 +39,10 @@ const DEMO_VS_REAL = [
 ];
 
 const WHAT_TRANSFERS = [
-  "The workflow structure — intake → root cause → CAPA → summary → QA review — mirrors the 7-step SOP and can be configured to match your QMS process",
-  "The human-in-the-loop design: AI suggests, investigator confirms or overrides at every step. Nothing is recorded without explicit human approval",
-  "The process mining visualization approach: same algorithm, same graph structure, applied to your event log instead of the synthetic one",
-  "The audit trail and explainability design — every AI recommendation shows its evidence sources and historical matches",
-  "The dashboard and aging log structure — same metrics, same color-coding logic, driven by your data instead of synthetic records",
+  "The workflow logic — intake, root cause, CAPA, review — mirrors standard GMP deviation management SOPs and would be configured to match your specific QMS process and data structure",
+  "The human-in-the-loop design principle: AI suggests, investigator confirms or overrides. Nothing is recorded without explicit human approval. This governance model is non-negotiable in a GxP environment and would carry through to production",
+  "The process mining approach — reconstructing actual workflow from event log data rather than relying on SOPs — is the same methodology we would apply to your Veeva data",
+  "The audit trail and explainability design — showing evidence sources and confidence levels for every AI recommendation — reflects how we would architect accountability in a regulated environment",
 ];
 
 const DATA_SOURCES = [
@@ -102,14 +101,14 @@ export default function EnterpriseExplainerPage() {
         </div>
       </div>
 
-      {/* What transfers directly */}
+      {/* What this demo is designed to show */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
         <div className="flex items-center gap-2 mb-3">
           <Layers className="w-4 h-4 text-blue-600" />
-          <h2 className="text-base font-bold text-gray-900">What transfers directly</h2>
+          <h2 className="text-base font-bold text-gray-900">What this demo is designed to show</h2>
         </div>
-        <p className="text-sm text-gray-600 mb-3">These design decisions are not demo-specific — they apply equally to a production deployment:</p>
-        <div className="space-y-2">
+        <p className="text-sm text-gray-600 mb-3">The demo uses synthetic data to illustrate how we would approach Moderna&apos;s deviation management workflow — the methodology, design principles, and analytical approach are real, even if the implementation would be tailored to your environment.</p>
+        <div className="space-y-2 mb-4">
           {WHAT_TRANSFERS.map((item, i) => (
             <div key={i} className="flex items-start gap-2">
               <ArrowRight className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
@@ -117,6 +116,9 @@ export default function EnterpriseExplainerPage() {
             </div>
           ))}
         </div>
+        <p className="text-sm text-gray-500 italic leading-relaxed border-t border-blue-200 pt-3">
+          The specific metrics, visualizations, and interface design would all be shaped by your data, your workflows, and your team&apos;s needs — this is a starting point for that conversation, not a finished product.
+        </p>
       </div>
 
       {/* How real data gets connected */}
