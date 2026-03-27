@@ -3,6 +3,49 @@
 import { useState, useMemo } from "react";
 import { AlertTriangle, CheckCircle, Sparkles } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Cell, Tooltip, ResponsiveContainer, LabelList } from "recharts";
+
+// ─── Single stacked bar component ────────────────────────────────────────────
+function StackedBar({ segments }: {
+  segments: { label: string; value: number; color: string }[];
+}) {
+  const total = segments.reduce((s, seg) => s + seg.value, 0);
+  if (total === 0) return null;
+  return (
+    <div className="space-y-4">
+      {/* Bar */}
+      <div className="flex h-12 rounded-lg overflow-hidden w-full">
+        {segments.filter(s => s.value > 0).map((seg, i, arr) => (
+          <div
+            key={seg.label}
+            style={{ width: `${(seg.value / total) * 100}%`, backgroundColor: seg.color }}
+            className={`flex items-center justify-center ${i === 0 ? "rounded-l-lg" : ""} ${i === arr.length - 1 ? "rounded-r-lg" : ""}`}
+          >
+            {(seg.value / total) >= 0.12 && (
+              <span className="text-white text-sm font-bold drop-shadow-sm">{seg.value}</span>
+            )}
+          </div>
+        ))}
+      </div>
+      {/* Legend rows */}
+      <div className="space-y-2">
+        {segments.map(seg => (
+          <div key={seg.label} className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: seg.color }} />
+              <span className="text-sm text-gray-700">{seg.label}</span>
+            </div>
+            <span className="text-sm font-semibold text-gray-900 tabular-nums">
+              {seg.value}{" "}
+              <span className="text-xs font-normal text-gray-400">
+                ({Math.round((seg.value / total) * 100)}%)
+              </span>
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 import Badge from "@/components/Badge";
 import KPICard from "@/components/KPICard";
 import { capas, CAPAOwner, CAPAType, EffectivenessStatus } from "@/lib/data/capas";
@@ -170,20 +213,8 @@ export default function CAPATrackerPage() {
       <div className="grid grid-cols-4 gap-4">
         {/* By Status */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h3 className="text-sm font-semibold text-gray-800 mb-3">By Status</h3>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={statusData} margin={{ top: 20, bottom: 8, left: 0, right: 8 }} barCategoryGap="35%">
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} allowDecimals={false} width={28} />
-              <Tooltip formatter={(v) => [`${v} CAPAs`, ""]} contentStyle={{ fontSize: 12 }} />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                <LabelList dataKey="value" position="top" style={{ fontSize: 13, fontWeight: 600, fill: "#374151" }} />
-                {statusData.map(entry => (
-                  <Cell key={entry.name} fill={STATUS_COLORS[entry.name] || "#9ca3af"} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <h3 className="text-sm font-semibold text-gray-800 mb-4">By Status</h3>
+          <StackedBar segments={statusData.map(d => ({ label: d.name, value: d.value, color: STATUS_COLORS[d.name] || "#9ca3af" }))} />
         </div>
 
         {/* By Owner — horizontal bars so names aren't cut off */}
@@ -231,25 +262,8 @@ export default function CAPATrackerPage() {
 
         {/* CAPA Type Split */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h3 className="text-sm font-semibold text-gray-800 mb-3">CAPA Type Split</h3>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={capaTypeSplitData} margin={{ top: 28, bottom: 8, left: 0, right: 8 }} barCategoryGap="40%">
-              <XAxis dataKey="name" tick={{ fontSize: 13 }} />
-              <YAxis tick={{ fontSize: 12 }} allowDecimals={false} width={28} />
-              <Tooltip formatter={(v) => [`${v} CAPAs`, ""]} contentStyle={{ fontSize: 12 }} />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                <LabelList
-                  dataKey="value"
-                  position="top"
-                  formatter={(v) => `${v} (${Math.round((Number(v) / capas.length) * 100)}%)`}
-                  style={{ fontSize: 12, fontWeight: 600, fill: "#374151" }}
-                />
-                {capaTypeSplitData.map(entry => (
-                  <Cell key={entry.name} fill={entry.fill} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <h3 className="text-sm font-semibold text-gray-800 mb-4">CAPA Type Split</h3>
+          <StackedBar segments={capaTypeSplitData.map(d => ({ label: d.name, value: d.value, color: d.fill }))} />
         </div>
       </div>
 
