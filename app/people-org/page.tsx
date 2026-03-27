@@ -383,77 +383,97 @@ export default function PeopleOrgPage() {
             </div>
 
             {/* Center: two pyramid org diagrams */}
-            <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="flex gap-4 items-start justify-center">
 
-              {/* Today pyramid */}
-              <div className="flex flex-col items-center gap-1">
-                <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-2">Today</p>
-                {/* Tier 1 (top) — narrowest */}
-                <div className="flex justify-center w-full">
-                  <div className="bg-gray-300 border border-gray-400 rounded px-3 py-1 text-xs text-gray-700 font-medium text-center w-36">
-                    CAPA Review Board
-                  </div>
-                </div>
-                {/* Tier 2 */}
-                <div className="flex justify-center w-full">
-                  <div className="bg-gray-200 border border-gray-300 rounded px-3 py-1 text-xs text-gray-600 font-medium text-center w-44">
-                    Senior QA Investigator
-                  </div>
-                </div>
-                {/* Tier 3 (bottom) — widest */}
-                <div className="flex gap-1 justify-center w-full flex-wrap">
-                  {["INV-01", "INV-02", "INV-03", "INV-04"].map(id => (
-                    <div key={id} className="bg-gray-100 border border-gray-300 rounded px-2 py-1 text-[10px] text-gray-500 w-16 text-center">
-                      {id}
+                {/* ── TODAY pyramid ── */}
+                <div className="flex flex-col items-center" style={{ width: 200 }}>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-3">Today</p>
+                  {/* Top — narrowest */}
+                  <div className="flex justify-center w-full" style={{ paddingInline: "30%" }}>
+                    <div className="w-full bg-gray-300 border border-gray-400 rounded py-1.5 text-[10px] text-gray-700 font-semibold text-center flex flex-col items-center gap-0.5">
+                      <UserCircle className="w-3 h-3 text-gray-500" />
+                      CAPA Review Board
                     </div>
-                  ))}
+                  </div>
+                  <div className="text-gray-400 text-xs leading-none my-0.5">↑</div>
+                  {/* Middle */}
+                  <div className="flex justify-center w-full" style={{ paddingInline: "15%" }}>
+                    <div className="w-full bg-gray-200 border border-gray-300 rounded py-1.5 text-[10px] text-gray-600 font-semibold text-center flex flex-col items-center gap-0.5">
+                      <UserCircle className="w-3 h-3 text-gray-500" />
+                      Senior QA Investigator
+                    </div>
+                  </div>
+                  <div className="text-gray-400 text-xs leading-none my-0.5">↑</div>
+                  {/* Bottom — full width */}
+                  <div className="w-full grid grid-cols-2 gap-1">
+                    {["QA Investigator", "QA Investigator", "QA Investigator", "QA Investigator"].map((r, i) => (
+                      <div key={i} className="bg-gray-100 border border-gray-300 rounded py-1 text-[9px] text-gray-500 text-center flex flex-col items-center gap-0.5">
+                        <UserCircle className="w-2.5 h-2.5 text-gray-400" />{r}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[9px] text-gray-400 italic mt-3 text-center">Reactive, siloed, sequential</p>
                 </div>
-                {/* Reactive escalation arrow */}
-                <div className="flex flex-col items-center mt-1">
-                  <span className="text-[9px] text-gray-400">Reactive escalation ↑</span>
+
+                {/* Arrow */}
+                <div className="flex items-center self-center pt-2">
+                  <ArrowRight className="w-6 h-6 text-green-500" />
                 </div>
-                <div className="mt-1 text-center">
-                  <span className="text-[10px] text-gray-400 italic">Reactive, siloed, sequential</span>
+
+                {/* ── FUTURE pyramid ── */}
+                <div className="flex flex-col items-center" style={{ width: 220 }}>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-green-600 mb-3">Future</p>
+                  {/* Top — same narrow */}
+                  <div className="flex justify-center w-full" style={{ paddingInline: "30%" }}>
+                    <div className="w-full bg-green-100 border border-green-300 rounded py-1.5 text-[10px] text-green-800 font-semibold text-center flex flex-col items-center gap-0.5">
+                      <UserCircle className="w-3 h-3 text-gray-500" />
+                      QA Leadership
+                    </div>
+                  </div>
+                  <div className="text-green-500 text-xs leading-none my-0.5">↕</div>
+                  {/* AI Routing band — spans full width */}
+                  <div className="w-full bg-green-700 rounded py-1 text-[10px] text-white font-semibold text-center flex items-center justify-center gap-1">
+                    <Zap className="w-3 h-3" /> AI Routing Layer
+                  </div>
+                  <div className="text-green-500 text-xs leading-none my-0.5">↕</div>
+                  {/* Middle — wider than today */}
+                  <div className="w-full grid grid-cols-2 gap-1">
+                    <div className="bg-blue-50 border border-blue-200 rounded py-1.5 text-[9px] text-blue-700 font-medium text-center flex flex-col items-center gap-0.5">
+                      <Sparkles className="w-2.5 h-2.5 text-blue-500" />
+                      AI-Enabled<br/>Reviewers
+                    </div>
+                    <div className="bg-blue-50 border border-blue-200 rounded py-1.5 text-[9px] text-blue-700 font-medium text-center flex flex-col items-center gap-0.5">
+                      <Sparkles className="w-2.5 h-2.5 text-blue-500" />
+                      Cross-functional<br/>Coordinators
+                    </div>
+                  </div>
+                  <div className="text-green-500 text-xs leading-none my-0.5">↕</div>
+                  {/* Bottom — narrower than today */}
+                  <div className="flex justify-center w-full" style={{ paddingInline: "25%" }}>
+                    <div className="w-full bg-green-50 border border-green-300 rounded py-1.5 text-[9px] text-green-700 font-medium text-center flex flex-col items-center gap-0.5">
+                      <UserCircle className="w-2.5 h-2.5 text-gray-500" />
+                      Investigators ×2
+                    </div>
+                  </div>
+                  <p className="text-[9px] text-green-600 italic font-medium mt-3 text-center">Integrated, cross-functional,<br/>AI-orchestrated</p>
                 </div>
               </div>
 
-              {/* Future pyramid */}
-              <div className="flex flex-col items-center gap-1 relative">
-                <p className="text-[9px] font-black uppercase tracking-widest text-green-600 mb-2">Future</p>
-                {/* Tier 1 (top) */}
-                <div className="flex justify-center w-full">
-                  <div className="bg-green-100 border border-green-300 rounded px-3 py-1 text-xs text-green-800 font-medium w-36 text-center">
-                    QA Leadership
-                  </div>
+              {/* Net new roles — below pyramids, no overlap */}
+              <div className="border border-dashed border-blue-400 rounded-lg px-3 py-2 bg-blue-50 flex items-start gap-2">
+                <Sparkles className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-[10px] font-semibold text-blue-700">Net new roles TBD</p>
+                  <p className="text-[10px] text-blue-600 leading-snug">e.g. AI Workflow Coordinators. Full org impact requires reimagining the broader QA/QC portfolio beyond deviation management.</p>
                 </div>
-                {/* AI routing band */}
-                <div className="w-full bg-green-100 border border-green-300 rounded text-[10px] text-green-700 font-semibold text-center py-0.5 px-2">
-                  ⚡ AI Routing Layer
-                </div>
-                {/* Tier 2 — wider */}
-                <div className="flex gap-1 justify-center w-full">
-                  <div className="bg-green-50 border border-green-200 rounded px-2 py-1 text-[10px] text-green-700 text-center w-28">
-                    AI-Enabled Reviewers
-                  </div>
-                  <div className="bg-green-50 border border-green-200 rounded px-2 py-1 text-[10px] text-green-700 text-center w-28">
-                    Cross-functional Coordinators
-                  </div>
-                </div>
-                {/* Tier 3 (bottom) — narrower */}
-                <div className="flex gap-1 justify-center w-full">
-                  <div className="bg-green-50 border border-green-300 rounded px-2 py-1 text-[10px] text-green-600 w-24 text-center">
-                    Investigator ×2
-                  </div>
-                </div>
-                {/* Net new roles dotted box */}
-                <div className="absolute -right-2 top-8 border border-dashed border-blue-400 rounded p-1.5 w-28 text-[9px] text-blue-600 leading-tight">
-                  Net new roles TBD — e.g. AI Workflow Coordinators
-                </div>
-                <div className="mt-1 text-center">
-                  <span className="text-[10px] text-green-600 italic font-medium">
-                    Integrated, cross-functional, AI-orchestrated
-                  </span>
-                </div>
+              </div>
+
+              {/* Role type legend */}
+              <div className="flex gap-4">
+                <span className="flex items-center gap-1 text-[10px] text-gray-500"><UserCircle className="w-3 h-3 text-gray-500" /> Human</span>
+                <span className="flex items-center gap-1 text-[10px] text-blue-600"><Sparkles className="w-3 h-3 text-blue-500" /> Human + AI</span>
+                <span className="flex items-center gap-1 text-[10px] text-green-700"><Zap className="w-3 h-3 text-green-600" /> Fully Automated</span>
               </div>
             </div>
 
