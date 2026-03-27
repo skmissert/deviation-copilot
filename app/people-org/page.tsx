@@ -236,7 +236,6 @@ export default function PeopleOrgPage() {
               <DataCallout label="Avg cycle time" value={`${avgCycleTime}d`} sub="target: 30d" status={avgCycleTime > 30 ? "warn" : "ok"} />
               <DataCallout label="Queue wait time" value={`${QUEUE_WAIT}d`} sub="before investigation starts" status="warn" />
               <DataCallout label="Cycle time with AI" value={`${Math.round(avgCycleTime * 0.7)}d`} sub="Digital Twin projection (−30%)" status="ok" />
-              <DataCallout label="Path without CAPA" value={`${VARIANTS.find(v => v.id === 2)?.pct ?? 34}%`} sub="no CAPA required" status="neutral" />
             </div>
           </div>
 
