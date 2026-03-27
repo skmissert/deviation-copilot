@@ -6,7 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, Cell, Tooltip, ResponsiveContainer } from 
 import Badge from "@/components/Badge";
 import KPICard from "@/components/KPICard";
 import { capas, CAPAOwner, CAPAType, EffectivenessStatus } from "@/lib/data/capas";
-import { DEVIATIONS_BY_ID } from "@/lib/data/deviations";
+import { deviations, DEVIATIONS_BY_ID } from "@/lib/data/deviations";
 import { formatDate, daysBetween, isOverdue } from "@/lib/utils";
 
 const ALL = "All";
@@ -61,6 +61,16 @@ export default function CAPATrackerPage() {
     return Math.round((completed / capas.length) * 100);
   }, []);
   const aiAssistedCount = useMemo(() => capas.filter(c => c.ai_recommended).length, []);
+  const repeatCAPARate = useMemo(() => {
+    const linked = capas.filter(c => {
+      const dev = DEVIATIONS_BY_ID[c.deviation_id];
+      return dev && dev.recurrence_flag === 1;
+    }).length;
+    return Math.round((linked / capas.length) * 100);
+  }, []);
+  const repeatDeviationRate = useMemo(() => {
+    return Math.round((deviations.filter(d => d.recurrence_flag === 1).length / deviations.length) * 100);
+  }, []);
 
   // Chart data
   const statusData = useMemo(() => {
@@ -85,18 +95,32 @@ export default function CAPATrackerPage() {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, []);
 
+  const capaTypeSplitData = useMemo(() => {
+    let corrective = 0;
+    let preventive = 0;
+    capas.forEach(c => {
+      if (c.action_type === "Corrective" || c.action_type === "Corrective + Preventive") corrective++;
+      if (c.action_type === "Preventive" || c.action_type === "Corrective + Preventive") preventive++;
+    });
+    return [
+      { name: "Corrective", value: corrective, fill: "#3b82f6" },
+      { name: "Preventive", value: preventive, fill: "#22c55e" },
+    ];
+  }, []);
+
   const agingData = useMemo(() => {
     const today = new Date("2026-03-26");
     const buckets = [
-      { bucket: "0–30d", ...Object.fromEntries(Object.keys(STAGE_COLORS).map(s => [s, 0])) },
-      { bucket: "30–60d", ...Object.fromEntries(Object.keys(STAGE_COLORS).map(s => [s, 0])) },
-      { bucket: "60–90d", ...Object.fromEntries(Object.keys(STAGE_COLORS).map(s => [s, 0])) },
+      { bucket: "0–10d", ...Object.fromEntries(Object.keys(STAGE_COLORS).map(s => [s, 0])) },
+      { bucket: "10–20d", ...Object.fromEntries(Object.keys(STAGE_COLORS).map(s => [s, 0])) },
+      { bucket: "20–30d", ...Object.fromEntries(Object.keys(STAGE_COLORS).map(s => [s, 0])) },
+      { bucket: "30–90d", ...Object.fromEntries(Object.keys(STAGE_COLORS).map(s => [s, 0])) },
       { bucket: "90+d", ...Object.fromEntries(Object.keys(STAGE_COLORS).map(s => [s, 0])) },
     ];
     capas.filter(c => c.effectiveness_check_status !== "Completed").forEach(c => {
       const age = Math.round((today.getTime() - new Date(c.created_date).getTime()) / 86400000);
       const stage = c.stage ?? "Action Planning";
-      const bi = age < 30 ? 0 : age < 60 ? 1 : age < 90 ? 2 : 3;
+      const bi = age < 10 ? 0 : age < 20 ? 1 : age < 30 ? 2 : age < 90 ? 3 : 4;
       (buckets[bi] as any)[stage] = ((buckets[bi] as any)[stage] ?? 0) + 1;
     });
     return buckets;
@@ -122,16 +146,28 @@ export default function CAPATrackerPage() {
       </div>
 
       {/* KPI Strip */}
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-7 gap-3">
         <KPICard label="Total Open CAPAs" value={totalOpen} color="blue" />
         <KPICard label="Overdue CAPAs" value={overdue} color={overdue > 0 ? "red" : "green"} subtext={overdue > 0 ? "Require immediate attention" : "None overdue"} />
         <KPICard label="Due This Week" value={dueThisWeek} color={dueThisWeek > 2 ? "amber" : "default"} />
         <KPICard label="Avg Days to Close" value={`${avgDaysToClose}d`} subtext="From creation to completion" />
         <KPICard label="AI-Assisted CAPAs" value={`${aiAssistedCount} / ${capas.length}`} color="blue" subtext="Created using AI recommendations" />
+        <KPICard
+          label="Repeat CAPA Rate"
+          value={`${repeatCAPARate}%`}
+          color={repeatCAPARate > 20 ? "red" : "default"}
+          subtext="linked to recurring dev"
+        />
+        <KPICard
+          label="Repeat Deviation Rate"
+          value={`${repeatDeviationRate}%`}
+          color={repeatDeviationRate >= 15 ? "red" : repeatDeviationRate >= 10 ? "amber" : "green"}
+          subtext="primary effectiveness measure"
+        />
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         {/* By Status */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <h3 className="text-sm font-semibold text-gray-800 mb-2">By Status</h3>
@@ -188,6 +224,23 @@ export default function CAPATrackerPage() {
               </span>
             ))}
           </div>
+        </div>
+
+        {/* CAPA Type Split */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <h3 className="text-sm font-semibold text-gray-800 mb-2">CAPA Type Split</h3>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={capaTypeSplitData} margin={{ bottom: 20 }}>
+              <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+              <Tooltip formatter={(v) => [`${v} CAPAs`, ""]} contentStyle={{ fontSize: 11 }} />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                {capaTypeSplitData.map(entry => (
+                  <Cell key={entry.name} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 

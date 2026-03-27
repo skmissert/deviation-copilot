@@ -8,6 +8,16 @@ import {
   Clock, User, Lock, Check, Pencil, Plus, ExternalLink
 } from "lucide-react";
 import type { CAPAOwner } from "@/lib/data/capas";
+
+function getRevisionCount(dev: { deviation_id: string; severity: string; capa_required: 0 | 1 }): number {
+  const isHigh = dev.severity === "Critical" || (dev.severity === "Major" && dev.capa_required === 1);
+  const isMedium = !isHigh && (dev.severity === "Major" || dev.capa_required === 1);
+  const seed = dev.deviation_id.split("").reduce((acc, ch) => acc * 31 + ch.charCodeAt(0), 0) >>> 0;
+  const rng = ((seed * 1103515245 + 12345) >>> 0) / 0xffffffff;
+  if (isHigh) return Math.floor(rng * 7) + 9;   // 9-15
+  if (isMedium) return Math.floor(rng * 4) + 5;  // 5-8
+  return Math.floor(rng * 3) + 2;                // 2-4
+}
 import Badge from "@/components/Badge";
 import { deviations, DEVIATIONS_BY_ID } from "@/lib/data/deviations";
 import { capas } from "@/lib/data/capas";
@@ -250,6 +260,14 @@ export default function InvestigationWorkspacePage() {
         <span className="text-sm text-gray-700 font-medium">{deviation.deviation_id}</span>
       </div>
 
+      {/* Recurring Deviation Banner */}
+      {deviation.recurrence_flag === 1 && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-red-200 bg-red-50 text-red-700 font-medium text-sm">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          <span>Recurring Deviation — Elevated investigation required</span>
+        </div>
+      )}
+
       {/* Deviation Header Card */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <div className="flex items-start justify-between">
@@ -265,6 +283,21 @@ export default function InvestigationWorkspacePage() {
             <div><span className="font-medium text-gray-700">Opened:</span> {formatDate(deviation.opened_date)}</div>
             <div><span className="font-medium text-gray-700">Investigator:</span> {INVESTIGATOR_NAMES[deviation.investigator_id] ?? deviation.investigator_id}</div>
             <div><span className="font-medium text-gray-700">QA Analyst:</span> {deviation.qa_analyst_id}</div>
+            <div className="flex items-center gap-1.5 justify-end mt-1">
+              <FileText className="w-3.5 h-3.5 text-gray-400" />
+              <span className="font-medium text-gray-700">Doc Revisions:</span>
+              <span className="text-gray-600">{getRevisionCount(deviation)}</span>
+            </div>
+            <div className="flex items-center gap-1.5 justify-end text-xs">
+              <span className="text-gray-400">Root Cause Iterations: {Math.max(1, getRevisionCount(deviation) - 2)}</span>
+              {deviation.reopened_flag === 1 ? (
+                <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium border border-amber-200">Multiple cycles</span>
+              ) : (
+                <span className="px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-medium border border-green-200 flex items-center gap-0.5">
+                  <CheckCircle className="w-3 h-3" /> Met target
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-4 text-sm">

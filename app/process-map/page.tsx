@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from "recharts";
 import {
   AlertTriangle, CheckCircle, Clock, TrendingDown,
   ZapOff, RefreshCw, ArrowRight, ChevronDown, ChevronUp, Info
@@ -11,6 +11,8 @@ import {
   INEFFICIENCIES, ACTIVITY_LABELS,
   type Variant, type Inefficiency, type StepMetrics,
 } from "@/lib/data/processEvents";
+import { deviations } from "@/lib/data/deviations";
+import { capas } from "@/lib/data/capas";
 
 // ─── Colour helpers ───────────────────────────────────────────────────────────
 
@@ -222,6 +224,67 @@ export default function ProcessMapPage() {
   const avgCycleTime  = Math.round(PROCESS_CASES.reduce((s, c) => s + c.total_cycle_days, 0) / PROCESS_CASES.length);
   const reworkRate    = Math.round((PROCESS_CASES.filter(c => c.has_rework).length / PROCESS_CASES.length) * 100);
 
+  // Root Cause Patterns data
+  const RC_CATEGORY_MAP: Record<string, string> = {
+    "Human Factors": "Human Factors",
+    "Operator Training Gap": "Human Factors",
+    "Documentation Error": "Documentation",
+    "Process Parameter Drift": "Manufacturing / Process",
+    "Equipment Calibration Drift": "Equipment",
+    "Environmental Excursion": "Other",
+    "Supplier Material Issue": "Other",
+  };
+
+  const RC_COLORS: Record<string, string> = {
+    "Human Factors": "#3b82f6",        // blue-500
+    "Documentation": "#f59e0b",        // amber-500
+    "Manufacturing / Process": "#a855f7", // purple-500
+    "Equipment": "#22c55e",            // green-500
+    "Other": "#9ca3af",                // gray-400
+  };
+
+  const RC_ORDER = ["Documentation", "Equipment", "Human Factors", "Manufacturing / Process", "Other"];
+
+  const rootCausePatternData = useMemo(() => {
+    // Count deviations per display category
+    const devCounts: Record<string, number> = {};
+    RC_ORDER.forEach(cat => { devCounts[cat] = 0; });
+    deviations.forEach(d => {
+      const displayCat = RC_CATEGORY_MAP[d.root_cause_category] ?? "Other";
+      devCounts[displayCat] = (devCounts[displayCat] ?? 0) + 1;
+    });
+
+    // Build lookup: deviation_id -> display category
+    const devCatMap: Record<string, string> = {};
+    deviations.forEach(d => {
+      devCatMap[d.deviation_id] = RC_CATEGORY_MAP[d.root_cause_category] ?? "Other";
+    });
+
+    // Count corrective/preventive CAPAs per display category
+    const correctiveCounts: Record<string, number> = {};
+    const preventiveCounts: Record<string, number> = {};
+    RC_ORDER.forEach(cat => { correctiveCounts[cat] = 0; preventiveCounts[cat] = 0; });
+    capas.filter(c => c.effectiveness_check_status === "Completed").forEach(c => {
+      const cat = devCatMap[c.deviation_id];
+      if (!cat) return;
+      if (c.action_type === "Corrective" || c.action_type === "Corrective + Preventive") {
+        correctiveCounts[cat] = (correctiveCounts[cat] ?? 0) + 1;
+      }
+      if (c.action_type === "Preventive" || c.action_type === "Corrective + Preventive") {
+        preventiveCounts[cat] = (preventiveCounts[cat] ?? 0) + 1;
+      }
+    });
+
+    return RC_ORDER.map(cat => ({
+      name: cat,
+      count: devCounts[cat] ?? 0,
+      pct: Math.round(((devCounts[cat] ?? 0) / deviations.length) * 100),
+      corrective: correctiveCounts[cat] ?? 0,
+      preventive: preventiveCounts[cat] ?? 0,
+      fill: RC_COLORS[cat] ?? "#9ca3af",
+    })).sort((a, b) => b.count - a.count);
+  }, []);
+
   const STEP_LABEL_MAP: Record<string, string> = {
     DEV_REPORTED:              "Detection to Reporting",
     TRIAGE_COMPLETE:           "Classification",
@@ -265,21 +328,28 @@ export default function ProcessMapPage() {
       </div>
 
       {/* KPI Strip */}
-      <div className="grid grid-cols-5 gap-3">
-        {[
-          { label: "Deviations Analyzed", value: PROCESS_CASES.length, sub: "deviations mined", color: "text-gray-900" },
-          { label: "Test Right First Time %", value: "99%", sub: "target: 99.9%", color: "text-green-700" },
-          { label: "Path with CAPA", value: "15%", sub: "formal CAPA required", color: "text-amber-700" },
-          { label: "% Approved within 30d", value: `${Math.round((PROCESS_CASES.filter(c => c.total_cycle_days <= 30).length / PROCESS_CASES.length) * 100)}%`, sub: "closed within 30 days", color: "text-gray-900" },
-          { label: "Rework Rate", value: `${reworkRate}%`, sub: "re-investigation required", color: reworkRate > 10 ? "text-red-700" : "text-green-700" },
-        ].map(k => (
-          <div key={k.label} className="bg-white rounded-lg border border-gray-200 p-3">
-            <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">{k.label}</p>
-            <p className={`text-2xl font-bold mt-0.5 ${k.color}`}>{k.value}</p>
-            <p className="text-xs text-gray-400 mt-0.5">{k.sub}</p>
+      {(() => {
+        const recurringDevPct = Math.round((deviations.filter(d => d.recurrence_flag === 1).length / deviations.length) * 100);
+        const recurringColor = recurringDevPct >= 15 ? "text-red-700" : recurringDevPct >= 10 ? "text-amber-700" : "text-green-700";
+        return (
+          <div className="grid grid-cols-6 gap-3">
+            {[
+              { label: "Deviations Analyzed", value: PROCESS_CASES.length, sub: "deviations mined", color: "text-gray-900" },
+              { label: "Test Right First Time %", value: "99%", sub: "target: 99.9%", color: "text-green-700" },
+              { label: "Path with CAPA", value: "15%", sub: "formal CAPA required", color: "text-amber-700" },
+              { label: "% Approved within 30d", value: `${Math.round((PROCESS_CASES.filter(c => c.total_cycle_days <= 30).length / PROCESS_CASES.length) * 100)}%`, sub: "closed within 30 days", color: "text-gray-900" },
+              { label: "Rework Rate", value: `${reworkRate}%`, sub: "re-investigation required", color: reworkRate > 10 ? "text-red-700" : "text-green-700" },
+              { label: "Recurring Deviation %", value: `${recurringDevPct}%`, sub: "target: <10%", color: recurringColor },
+            ].map(k => (
+              <div key={k.label} className="bg-white rounded-lg border border-gray-200 p-3">
+                <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">{k.label}</p>
+                <p className={`text-2xl font-bold mt-0.5 ${k.color}`}>{k.value}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{k.sub}</p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        );
+      })()}
 
       {/* Main body — process graph + right panels */}
       <div className="grid grid-cols-5 gap-4 items-start">
@@ -404,6 +474,54 @@ export default function ProcessMapPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Root Cause Patterns */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-sm font-semibold text-gray-800">Root Cause Patterns</h2>
+          <span className="text-xs text-gray-400">Derived from {deviations.length} deviations · CAPA split shows completed CAPAs only</span>
+        </div>
+        <p className="text-xs text-gray-400 mb-3">Distribution of root cause categories with corrective vs. preventive CAPA split</p>
+        <div className="grid grid-cols-3 gap-6 items-start">
+          <div className="col-span-2">
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={rootCausePatternData} layout="vertical" margin={{ left: 140, right: 60, top: 4, bottom: 4 }}>
+                <XAxis type="number" tick={{ fontSize: 10 }} domain={[0, Math.max(...rootCausePatternData.map(d => d.count)) + 2]} allowDecimals={false} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={140} />
+                <Tooltip
+                  formatter={(value, name) => [`${value} deviations`, name]}
+                  contentStyle={{ fontSize: 11 }}
+                />
+                <Bar dataKey="count" name="Deviations" radius={[0, 4, 4, 0]}>
+                  {rootCausePatternData.map((entry, i) => (
+                    <Cell key={i} fill={entry.fill} />
+                  ))}
+                  <LabelList
+                    dataKey="count"
+                    position="insideRight"
+                    style={{ fontSize: 11, fill: "#fff", fontWeight: 700 }}
+                  />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="col-span-1 space-y-2 pt-1">
+            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">CAPA Split by Category</p>
+            {rootCausePatternData.map(entry => (
+              <div key={entry.name} className="text-xs">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <span className="w-2 h-2 rounded-sm inline-block shrink-0" style={{ backgroundColor: entry.fill }} />
+                  <span className="font-medium text-gray-700 truncate">{entry.name}</span>
+                  <span className="text-gray-400 ml-auto">{entry.pct}%</span>
+                </div>
+                <div className="pl-3.5 text-gray-400 text-[10px]">
+                  Corrective: {entry.corrective} | Preventive: {entry.preventive}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

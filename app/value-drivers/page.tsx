@@ -173,19 +173,19 @@ const PILLARS: Pillar[] = [
     pageLink: "/deviations",
     metrics: [
       {
-        id: "rft",
-        name: "Right First Time",
-        targetLabel: ">85%",
-        description: "% of closed deviations with no reopen or recurrence — system quality signal",
+        id: "recurring-dev-pct",
+        name: "Recurring Deviation %",
+        targetLabel: "<10%",
+        description: "% of deviations flagged as repeat occurrences — CAPA effectiveness signal",
         whyItMatters:
-          "Right First Time measures whether investigations are resolving the actual root cause on the first attempt. A low RFT rate is a leading indicator of CAPA system failure, root cause under-investigation, and future regulatory findings. It captures rework costs that are invisible to simple cycle time metrics.",
+          "Recurring deviations are the clearest evidence of CAPA system failure. When the same issue reappears, the corrective action either was never fully implemented or did not address the actual systemic driver. Regulators treat high recurrence rates as a signal of a broken quality system and will cite them in audit findings.",
         keyDrivers: [
-          "Root cause analysis depth and accuracy",
-          "CAPA specificity — targeted systemic fixes vs. generic retraining",
-          "Investigator training and domain expertise",
-          "AI-assisted pattern matching against historical cases",
+          "CAPA effectiveness check rigor and timeliness",
+          "Root cause identification accuracy — fixing root causes vs. symptoms",
+          "Systemic vs. local CAPA scope — local fixes rarely prevent recurrence",
+          "Historical pattern awareness across investigations",
         ],
-        connectedTo: ["Recurrence Rate", "Avg Investigation Duration", "Conformance Score"],
+        connectedTo: ["Recurrence Rate", "CAPA Closure Time", "Conformance Score"],
       },
       {
         id: "doc-accuracy",
@@ -200,7 +200,7 @@ const PILLARS: Pillar[] = [
           "Review and approval workflow configuration",
           "Workload and time pressure during batch execution",
         ],
-        connectedTo: ["Right First Time", "Recurrence Rate", "Conformance Score"],
+        connectedTo: ["Recurring Deviation %", "Recurrence Rate", "Conformance Score"],
       },
     ],
   },
@@ -273,7 +273,7 @@ function isOnTarget(metricId: string, value: number): boolean {
     case "aging-capas":    return value === 0;
     case "utilization":    return value >= 70 && value <= 85;
     case "backlog":        return value <= 10;
-    case "rft":            return value > 85;
+    case "recurring-dev-pct": return value < 10;
     case "doc-accuracy":   return value > 75;
     case "conformance":    return value > 75;
     case "recurrence":     return value < 15;
@@ -283,6 +283,24 @@ function isOnTarget(metricId: string, value: number): boolean {
 }
 
 // ─── Components ──────────────────────────────────────────────────────────────
+
+function getActualColor(metricId: string, value: number, onTarget: boolean): string {
+  if (metricId === "recurring-dev-pct") {
+    if (value >= 15) return "text-red-600";
+    if (value >= 10) return "text-amber-600";
+    return "text-green-700";
+  }
+  return onTarget ? "text-green-700" : "text-red-600";
+}
+
+function getStatusIcon(metricId: string, value: number, onTarget: boolean) {
+  if (metricId === "recurring-dev-pct" && value >= 10 && value < 15) {
+    return <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />;
+  }
+  return onTarget
+    ? <CheckCircle className="w-3.5 h-3.5 text-green-600 shrink-0" />
+    : <AlertCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />;
+}
 
 function MetricCard({
   metric,
@@ -301,6 +319,7 @@ function MetricCard({
   isSelected: boolean;
   onSelect: () => void;
 }) {
+  const colorClass = getActualColor(metric.id, actual, onTarget);
   return (
     <div
       onClick={onSelect}
@@ -311,10 +330,8 @@ function MetricCard({
       {/* Actual vs target row */}
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
-          {onTarget
-            ? <CheckCircle className="w-3.5 h-3.5 text-green-600 shrink-0" />
-            : <AlertCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
-          <span className={`text-lg font-bold ${onTarget ? "text-green-700" : "text-red-600"}`}>
+          {getStatusIcon(metric.id, actual, onTarget)}
+          <span className={`text-lg font-bold ${colorClass}`}>
             {actualLabel}
           </span>
         </div>
@@ -422,11 +439,9 @@ export default function ValueDriversPage() {
     const openDeviations = deviations.filter(d => d.status !== "Closed").length;
 
     // Compliance & Risk
-    const closedDevs = deviations.filter(d => d.status === "Closed");
-    const rftCount = closedDevs.filter(d => d.reopened_flag === 0 && d.recurrence_flag === 0).length;
-    const rightFirstTime = closedDevs.length
-      ? Math.round((rftCount / closedDevs.length) * 100)
-      : 0;
+    const recurringDevPct = Math.round(
+      (deviations.filter(d => d.recurrence_flag === 1).length / deviations.length) * 100
+    );
     const docAccuracyPct = Math.round(
       (deviations.filter(d => d.root_cause_category !== "Documentation Error").length / deviations.length) * 100
     );
@@ -448,10 +463,10 @@ export default function ValueDriversPage() {
       "aging-deviations":  { value: agingDeviationsPct,  label: `${agingDeviationsPct}%` },
       "capa-closure":      { value: avgCapaClosureDays,   label: `${avgCapaClosureDays}d` },
       "aging-capas":       { value: agingCapas,           label: `${agingCapas}` },
-      "utilization":       { value: invUtilization,       label: `${invUtilization}%` },
-      "backlog":           { value: openDeviations,       label: `${openDeviations}` },
-      "rft":               { value: rightFirstTime,       label: `${rightFirstTime}%` },
-      "doc-accuracy":      { value: docAccuracyPct,       label: `${docAccuracyPct}%` },
+      "utilization":           { value: invUtilization,       label: `${invUtilization}%` },
+      "backlog":               { value: openDeviations,       label: `${openDeviations}` },
+      "recurring-dev-pct":     { value: recurringDevPct,      label: `${recurringDevPct}%` },
+      "doc-accuracy":          { value: docAccuracyPct,       label: `${docAccuracyPct}%` },
       "conformance":       { value: conformanceScore,     label: `${conformanceScore}%` },
       "recurrence":        { value: recurrenceRate,       label: `${recurrenceRate}%` },
       "inv-duration":      { value: avgInvDuration,       label: `${avgInvDuration}d` },
